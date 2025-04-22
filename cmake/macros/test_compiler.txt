@@ -1,0 +1,129 @@
+macro (test_compiler compiler)
+
+if ("${compiler}" MATCHES "pgfortran")
+
+  add_definitions( -D_PGI=1 )
+  set(
+    CMAKE_Fortran_FLAGS
+    "${CMAKE_Fortran_FLAGS} ${CMAKE_PGI_FLAGS}"
+  )
+  set( USER_DEBUG_FLAGS "${PGI_USER_DEBUG_FLAGS}" )
+  set( USER_RELEASE_FLAGS "${PGI_USER_RELEASE_FLAGS}" )
+  set( OPENMP_FLAG "${PGI_OPENMP_FLAG}" )
+  MESSAGE( STATUS "Compiling with PGI." )
+
+elseif ("${compiler}" MATCHES "gfortran")
+
+  add_definitions( -D_GCC=1 )
+  set(
+    CMAKE_Fortran_FLAGS
+    "${CMAKE_Fortran_FLAGS} ${CMAKE_GCC_FLAGS}"
+  )
+  set( USER_DEBUG_FLAGS "${GCC_USER_DEBUG_FLAGS}" )
+  set( USER_RELEASE_FLAGS "${GCC_USER_RELEASE_FLAGS}" )
+  set( OPENMP_FLAG "${GCC_OPENMP_FLAG}" )
+  MESSAGE( STATUS "Compiling with GCC." )
+
+elseif ("${compiler}" MATCHES "mpif90")
+
+  execute_process( COMMAND mpif90 --version OUTPUT_VARIABLE version_out )
+  if ( "${version_out}" MATCHES "pgfortran" OR
+       "${version_out}" MATCHES "pgf90" )
+
+    add_definitions( -D_PGI=1 )
+    set(
+      CMAKE_Fortran_FLAGS
+      "${CMAKE_Fortran_FLAGS} ${CMAKE_PGI_FLAGS}"
+    )
+    set( USER_DEBUG_FLAGS "${PGI_USER_DEBUG_FLAGS}" )
+    set( USER_RELEASE_FLAGS "${PGI_USER_RELEASE_FLAGS}" )
+    set( OPENMP_FLAG "${PGI_OPENMP_FLAG}" )
+    MESSAGE( STATUS "Compiling with MPI+PGI." )
+
+  elseif ( "${version_out}" MATCHES "GNU Fortran" )
+
+    add_definitions( -D_GCC=1 )
+    set(
+      CMAKE_Fortran_FLAGS
+      "${CMAKE_Fortran_FLAGS} ${CMAKE_GCC_FLAGS}"
+    )
+    set( USER_DEBUG_FLAGS "${GCC_USER_DEBUG_FLAGS}" )
+    set( USER_RELEASE_FLAGS "${GCC_USER_RELEASE_FLAGS}" )
+    set( OPENMP_FLAG "${GCC_OPENMP_FLAG}" )
+    MESSAGE( STATUS "Compiling with MPI+GCC." )
+
+  elseif ( "${version_out}" MATCHES "IFORT" )
+
+    add_definitions( -D_INTEL=1 )
+    set(
+      CMAKE_Fortran_FLAGS
+      "${CMAKE_Fortran_FLAGS} ${CMAKE_INTEL_FLAGS}"
+    )
+    set( USER_DEBUG_FLAGS "${INTEL_USER_DEBUG_FLAGS}" )
+    set( USER_RELEASE_FLAGS "${INTEL_USER_RELEASE_FLAGS}" )
+    set( OPENMP_FLAG "${INTEL_OPENMP_FLAG}" )
+    MESSAGE( STATUS "Compiling with MPI+Intel." )
+
+  endif()
+
+elseif ("${compiler}" MATCHES "mpifort")
+
+  execute_process( COMMAND mpifort --version OUTPUT_VARIABLE version_out )
+  if ( "${version_out}" MATCHES "pgfortran" OR
+       "${version_out}" MATCHES "pgf90" )
+
+    add_definitions( -D_PGI=1 )
+    set(
+      CMAKE_Fortran_FLAGS
+      "${CMAKE_Fortran_FLAGS} ${CMAKE_PGI_FLAGS}"
+    )
+    set( USER_DEBUG_FLAGS "${PGI_USER_DEBUG_FLAGS}" )
+    set( USER_RELEASE_FLAGS "${PGI_USER_RELEASE_FLAGS}" )
+    set( OPENMP_FLAG "${PGI_OPENMP_FLAG}" )
+    MESSAGE( STATUS "Compiling with MPI+PGI." )
+
+  elseif ( "${version_out}" MATCHES "GNU Fortran" )
+
+    add_definitions( -D_GCC=1 )
+    set(
+      CMAKE_Fortran_FLAGS
+      "${CMAKE_Fortran_FLAGS} ${CMAKE_GCC_FLAGS}"
+    )
+    set( USER_DEBUG_FLAGS "${GCC_USER_DEBUG_FLAGS}" )
+    set( USER_RELEASE_FLAGS "${GCC_USER_RELEASE_FLAGS}" )
+    set( OPENMP_FLAG "${GCC_OPENMP_FLAG}" )
+    MESSAGE( STATUS "Compiling with MPI+GCC." )
+
+  elseif ( "${version_out}" MATCHES "IFORT" )
+
+    add_definitions( -D_INTEL=1 )
+    set(
+      CMAKE_Fortran_FLAGS
+      "${CMAKE_Fortran_FLAGS} ${CMAKE_INTEL_FLAGS}"
+    )
+    set( USER_DEBUG_FLAGS "${INTEL_USER_DEBUG_FLAGS}" )
+    set( USER_RELEASE_FLAGS "${INTEL_USER_RELEASE_FLAGS}" )
+    set( OPENMP_FLAG "${INTEL_OPENMP_FLAG}" )
+    MESSAGE( STATUS "Compiling with MPI+Intel." )
+
+  endif()
+
+elseif ("${compiler}" MATCHES "ifort")
+
+  add_definitions( -D_INTEL=1 )
+  set(
+    CMAKE_Fortran_FLAGS
+    "${CMAKE_Fortran_FLAGS} ${CMAKE_INTEL_FLAGS}"
+  )
+  set( USER_DEBUG_FLAGS "${INTEL_USER_DEBUG_FLAGS}" )
+  set( USER_RELEASE_FLAGS "${INTEL_USER_RELEASE_FLAGS}" )
+  set( OPENMP_FLAG "${INTEL_OPENMP_FLAG}" )
+  MESSAGE( STATUS "Compiling with Intel." )
+
+else()
+
+  MESSAGE( STATUS "Unknown compiler." )
+
+endif()
+
+endmacro()

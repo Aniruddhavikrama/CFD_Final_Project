@@ -1,0 +1,8 @@
+add_exe_sources(proj main.f90)
+add_lib_sources(lib set_precision.f90)
+add_lib_sources(lib set_constants.f90)
+add_lib_sources(lib fluid_constants.f90)
+add_lib_sources(lib set_inputs.f90)
+add_lib_sources(lib grid_type.f90)
+add_lib_sources(lib geometry.f90)
+add_lib_sources(lib variable_conversion.f90)
