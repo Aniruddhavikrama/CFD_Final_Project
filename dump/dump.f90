@@ -66,19 +66,23 @@ module set_precision
     public :: imax, jmax, neq, xmin, xmax, ymin, ymax, n_ghost
     public :: i_high, i_low, ig_high, ig_low
     public :: j_high, j_low, jg_high, jg_low
+    public :: i_cell_high, i_cell_low, j_cell_high, j_cell_low
     public :: set_derived_inputs
 
 
 
-
-    integer :: imax           = 11
-    integer :: jmax           = 11
-    integer :: i_low          = 0
-    integer :: i_high         = 0
+    integer :: imax           = 2
+    integer :: jmax           = 2
+    integer :: i_low          = 0  ! Now will represent face index lower bound
+    integer :: i_high         = 0  ! Now will represent face index upper bound
+    integer :: i_cell_low     = 0  ! New: cell index lower bound
+    integer :: i_cell_high    = 0  ! New: cell index upper bound
     integer :: ig_low         = 0
     integer :: ig_high        = 0
-    integer :: j_low          = 0
-    integer :: j_high         = 0
+    integer :: j_low          = 0  ! Now will represent face index lower bound
+    integer :: j_high         = 0  ! Now will represent face index upper bound
+    integer :: j_cell_low     = 0  ! New: cell index lower bound
+    integer :: j_cell_high    = 0  ! New: cell index upper bound
     integer :: jg_low         = 0
     integer :: jg_high        = 0
     integer :: neq            = 4
@@ -99,14 +103,23 @@ subroutine set_derived_inputs
     ! u0 = u_inf*cos((pi/180.0_prec)*alpha)
     ! v0 = u_inf*sin((pi/180.0_prec)*alpha)
     ! rho_inf = p_inf/(R_gas*T_inf)
-    i_low = 1
-    j_low = 1
-    i_high = imax-1
-    j_high = jmax-1
-    ig_low  = i_low - n_ghost
-    jg_low  = j_low - n_ghost
-    ig_high = i_high + n_ghost
-    jg_high = j_high + n_ghost
+! Define cell indices
+  i_cell_low  = 1
+  i_cell_high = imax  ! 3 cells: i = 1, 2, 3
+  j_cell_low  = 1
+  j_cell_high = jmax  ! 3 cells: j = 1, 2, 3
+
+  ! Define face indices (i_low, i_high are now face indices)
+  i_low  = i_cell_low      ! First face at i = 1
+  i_high = i_cell_high + 1 ! Last face at i = 4 (for 3 cells)
+  j_low  = j_cell_low      ! First face at j = 1
+  j_high = j_cell_high + 1 ! Last face at j = 4
+
+  ! Define vertex indices (including ghost cells)
+  ig_low  = i_cell_low - n_ghost   ! -1
+  jg_low  = j_cell_low - n_ghost   ! -1
+  ig_high = i_cell_high + n_ghost  ! 5
+  jg_high = j_cell_high + n_ghost  ! 5
     
   end subroutine set_derived_inputs
     
@@ -114,9 +127,10 @@ end module set_inputs
 
 module grid_type
     use set_precision, only :prec
-    use set_constants, only : zero, one, two, half
+    use set_constants, only : zero, one, two, half,fourth
     use set_inputs,    only : i_low, i_high, ig_low, ig_high
     use set_inputs,    only : j_low, j_high, jg_low, jg_high
+    use set_inputs,    only : i_cell_low, i_cell_high, j_cell_low, j_cell_high
     
     implicit none
     
@@ -130,6 +144,8 @@ module grid_type
     integer :: imax, jmax, n_ghost
     integer :: i_low, i_high, ig_low, ig_high
     integer :: j_low, j_high, jg_low, jg_high
+    integer :: i_cell_low, i_cell_high  ! New
+    integer :: j_cell_low, j_cell_high
 
     real(prec),allocatable,dimension(:,:) :: x,y
     real(prec),allocatable,dimension(:,:) :: xc,yc
@@ -144,178 +160,108 @@ module grid_type
 
 contains
 subroutine allocate_grid(grid)
-    ! use set_inputs
+  type(grid_t), intent(inout) :: grid
 
-    type(grid_t),intent(inout) ::grid
+  ! Allocate vertex coordinates
+  allocate(grid%x(grid%ig_low:grid%ig_high, grid%jg_low:grid%jg_high))
+  allocate(grid%y(grid%ig_low:grid%ig_high, grid%jg_low:grid%jg_high))
 
-    allocate (              grid%x(ig_low:ig_high+1,jg_low:jg_high+1), &
-                            grid%y(ig_low:ig_high+1,jg_low:jg_high+1), &
-                            grid%xc(ig_low:ig_high+1,jg_low:jg_high+1), &
-                            grid%yc(ig_low:ig_high,jg_low:jg_high), &
-                            grid%A_xi(ig_low:ig_high,jg_low:jg_high), &
-                            grid%A_eta(ig_low:ig_high,jg_low:jg_high), &
-                            grid%n_xi(ig_low:ig_high,jg_low:jg_high,2),   &
-                            grid%n_eta(ig_low:ig_high,jg_low:jg_high,2),   &
-                            grid%n_xi_avg(ig_low:ig_high,jg_low:jg_high,2), &
-                            grid%n_eta_avg(ig_low:ig_high,jg_low:jg_high,2), &
-                            grid%V(ig_low:ig_high,jg_low:jg_high)    )
-    
-    grid%x= zero
-    grid%y= zero
+  ! Allocate cell center coordinates (use cell indices)
+  allocate(grid%xc(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high))
+  allocate(grid%yc(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high))
 
+  ! Allocate face areas (now directly use i_low:i_high, j_low:j_high)
+  allocate(grid%A_xi(grid%i_low:grid%i_high, grid%j_low:grid%j_high))
+  allocate(grid%A_eta(grid%i_low:grid%i_high, grid%j_low:grid%j_high))
 
-end subroutine allocate_grid    
+  ! Allocate normal vectors at faces
+  allocate(grid%n_xi(grid%i_low:grid%i_high, grid%j_low:grid%j_high, 2))
+  allocate(grid%n_eta(grid%i_low:grid%i_high, grid%j_low:grid%j_high, 2))
+
+  ! Allocate averaged normal vectors
+  allocate(grid%n_xi_avg(grid%i_low:grid%i_high, grid%j_low:grid%j_high, 2))
+  allocate(grid%n_eta_avg(grid%i_low:grid%i_high, grid%j_low:grid%j_high, 2))
+
+  ! Allocate cell volumes (use cell indices)
+  allocate(grid%V(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high))
+
+  ! Initialize all arrays to zero
+  grid%x = zero
+  grid%y = zero
+  grid%xc = zero
+  grid%yc = zero
+  grid%A_xi = zero
+  grid%A_eta = zero
+  grid%n_xi = zero
+  grid%n_eta = zero
+  grid%n_xi_avg = zero
+  grid%n_eta_avg = zero
+  grid%V = zero
+end subroutine allocate_grid   
 
 subroutine cell_geometry(grid)
-  use set_precision, only : prec
-  use set_constants, only : zero
-  
   type(grid_t), intent(inout) :: grid
   integer :: i, j
-  real(prec) :: dx, dy,area,cx,cy
-  
-  ! do j = grid%jg_low, grid%jg_high
-  !   do i = grid%ig_low, grid%ig_high
-  !     ! Calculate xi face (j-direction face)
-  !     ! Vector from (i,j) to (i,j+1)
-  !     dx = grid%x(i,j+1) - grid%x(i,j)
-  !     dy = grid%y(i,j+1) - grid%y(i,j)
-      
-  !     ! Area magnitude (length of the face)
-  !     grid%A_xi(i,j) = sqrt(dx**2 + dy**2)
-      
-  !     ! Normal vector (ensure proper normalization)
-  !     if (grid%A_xi(i,j) > zero) then
-  !       ! For a cartesian grid, normal to xi face points in x direction
-  !       grid%n_xi(i,j,1) = dy / grid%A_xi(i,j)  ! x-component
-  !       grid%n_xi(i,j,2) = -dx / grid%A_xi(i,j) ! y-component
-  !     else
-  !       grid%n_xi(i,j,1) = zero
-  !       grid%n_xi(i,j,2) = zero
-  !     end if
-      
-  !     ! Calculate eta face (i-direction face)
-  !     ! Vector from (i,j) to (i+1,j)
-  !     dx = grid%x(i+1,j) - grid%x(i,j)
-  !     dy = grid%y(i+1,j) - grid%y(i,j)
-      
-  !     ! Area magnitude (length of the face)
-  !     grid%A_eta(i,j) = sqrt(dx**2 + dy**2)
-      
-  !     ! Normal vector (ensure proper normalization)
-  !     if (grid%A_eta(i,j) > zero) then
-  !       ! For a cartesian grid, normal to eta face points in y direction
-  !       grid%n_eta(i,j,1) = -dy / grid%A_eta(i,j) ! x-component
-  !       grid%n_eta(i,j,2) = dx / grid%A_eta(i,j)  ! y-component
-  !     else
-  !       grid%n_eta(i,j,1) = zero
-  !       grid%n_eta(i,j,2) = zero
-  !     end if
-      
-  !     ! Calculate cell centers
-  !     grid%xc(i,j) = 0.25_prec * (grid%x(i,j) + grid%x(i+1,j) + &
-  !                                grid%x(i,j+1) + grid%x(i+1,j+1))
-  !     grid%yc(i,j) = 0.25_prec * (grid%y(i,j) + grid%y(i+1,j) + &
-  !                                grid%y(i,j+1) + grid%y(i+1,j+1))
-      
-  !     ! Calculate cell volume (area for 2D)
-  !     ! For cartesian grid, this is simply dx*dy
-  !     ! grid%V(i,j) = (grid%x(i+1,j) - grid%x(i,j)) * (grid%y(i,j+1) - grid%y(i,j))
-  !   end do
-  ! end do
-  
-  
-  ! do j = grid%jg_low, grid%jg_high
-  !   do i = grid%ig_low, grid%ig_high
-  !     ! Average xi face normals (if needed for your scheme)
-  !     if (i > grid%ig_low) then
-  !       grid%n_xi_avg(i,j,1) = 0.5_prec * (grid%n_xi(i,j,1) + grid%n_xi(i-1,j,1))
-  !       grid%n_xi_avg(i,j,2) = 0.5_prec * (grid%n_xi(i,j,2) + grid%n_xi(i-1,j,2))
-  !     else
-  !       grid%n_xi_avg(i,j,1) = grid%n_xi(i,j,1)
-  !       grid%n_xi_avg(i,j,2) = grid%n_xi(i,j,2)
-  !     end if
-      
-  !     ! Average eta face normals (if needed for your scheme)
-  !     if (j > grid%jg_low) then
-  !       grid%n_eta_avg(i,j,1) = 0.5_prec * (grid%n_eta(i,j,1) + grid%n_eta(i,j-1,1))
-  !       grid%n_eta_avg(i,j,2) = 0.5_prec * (grid%n_eta(i,j,2) + grid%n_eta(i,j-1,2))
-  !     else
-  !       grid%n_eta_avg(i,j,1) = grid%n_eta(i,j,1)
-  !       grid%n_eta_avg(i,j,2) = grid%n_eta(i,j,2)
-  !     end if
-  !   end do
-  ! end do
+  real(prec) :: dx, dy
 
-    ! Interior calculations
-  do j = grid%jg_low, grid%jg_high
-    do i = grid%ig_low, grid%ig_high
-      ! Calculate xi face (j-direction face)
-      ! Vector from (i,j) to (i,j+1)
-      dx = grid%x(i,j+1) - grid%x(i,j)
-      dy = grid%y(i,j+1) - grid%y(i,j)
-      
-      ! Area magnitude (length of the face)
-      grid%A_xi(i,j) = sqrt(dx**2 + dy**2)
-      
-      ! Normal vector (ensure proper normalization)
-      if (grid%A_xi(i,j) > zero) then
-        grid%n_xi(i,j,1) = dy / grid%A_xi(i,j)  ! x-component
-        grid%n_xi(i,j,2) = -dx / grid%A_xi(i,j) ! y-component
-      else
-        grid%n_xi(i,j,1) = zero
-        grid%n_xi(i,j,2) = zero
-      end if
-      
-      ! Calculate eta face (i-direction face)
-      ! Vector from (i,j) to (i+1,j)
-      dx = grid%x(i+1,j) - grid%x(i,j)
-      dy = grid%y(i+1,j) - grid%y(i,j)
-      
-      ! Area magnitude (length of the face)
-      grid%A_eta(i,j) = sqrt(dx**2 + dy**2)
-      
-      ! Normal vector (ensure proper normalization)
-      if (grid%A_eta(i,j) > zero) then
-        grid%n_eta(i,j,1) = -dy / grid%A_eta(i,j) ! x-component
-        grid%n_eta(i,j,2) = dx / grid%A_eta(i,j)  ! y-component
-      else
-        grid%n_eta(i,j,1) = zero
-        grid%n_eta(i,j,2) = zero
-      end if
-      
-      ! Calculate cell volume (area for 2D) using shoelace formula
-      area = 0.5_prec * abs( &
-             (grid%x(i,j) * grid%y(i+1,j) - grid%y(i,j) * grid%x(i+1,j)) + &
-             (grid%x(i+1,j) * grid%y(i+1,j+1) - grid%y(i+1,j) * grid%x(i+1,j+1)) + &
-             (grid%x(i+1,j+1) * grid%y(i,j+1) - grid%y(i+1,j+1) * grid%x(i,j+1)) + &
-             (grid%x(i,j+1) * grid%y(i,j) - grid%y(i,j+1) * grid%x(i,j)) )
-      grid%V(i,j) = area
-      
-      ! Calculate cell centers using centroid formula
-      cx = zero
-      cy = zero
-      cx = cx + (grid%x(i,j) + grid%x(i+1,j)) * &
-                (grid%x(i,j) * grid%y(i+1,j) - grid%x(i+1,j) * grid%y(i,j))
-      cx = cx + (grid%x(i+1,j) + grid%x(i+1,j+1)) * &
-                (grid%x(i+1,j) * grid%y(i+1,j+1) - grid%x(i+1,j+1) * grid%y(i+1,j))
-      cx = cx + (grid%x(i+1,j+1) + grid%x(i,j+1)) * &
-                (grid%x(i+1,j+1) * grid%y(i,j+1) - grid%x(i,j+1) * grid%y(i+1,j+1))
-      cx = cx + (grid%x(i,j+1) + grid%x(i,j)) * &
-                (grid%x(i,j+1) * grid%y(i,j) - grid%x(i,j) * grid%y(i,j+1))
-      cy = cy + (grid%y(i,j) + grid%y(i+1,j)) * &
-                (grid%x(i,j) * grid%y(i+1,j) - grid%x(i+1,j) * grid%y(i,j))
-      cy = cy + (grid%y(i+1,j) + grid%y(i+1,j+1)) * &
-                (grid%x(i+1,j) * grid%y(i+1,j+1) - grid%x(i+1,j+1) * grid%y(i+1,j))
-      cy = cy + (grid%y(i+1,j+1) + grid%y(i,j+1)) * &
-                (grid%x(i+1,j+1) * grid%y(i,j+1) - grid%x(i,j+1) * grid%y(i+1,j+1))
-      cy = cy + (grid%y(i,j+1) + grid%y(i,j)) * &
-                (grid%x(i,j+1) * grid%y(i,j) - grid%x(i,j) * grid%y(i,j+1))
-      grid%xc(i,j) = cx / (6.0_prec * area)
-      grid%yc(i,j) = cy / (6.0_prec * area)
-    end do
+  ! Compute cell centers (xc, yc) as the average of the four vertices
+  do j = grid%j_cell_low, grid%j_cell_high
+      do i = grid%i_cell_low, grid%i_cell_high
+          grid%xc(i,j) = fourth * (grid%x(i,j) + grid%x(i+1,j) + grid%x(i,j+1) + grid%x(i+1,j+1))
+          grid%yc(i,j) = fourth * (grid%y(i,j) + grid%y(i+1,j) + grid%y(i,j+1) + grid%y(i+1,j+1))
+      end do
   end do
-  
+
+  ! Compute face areas and normal vectors (xi-direction, vertical faces)
+  do j = grid%j_low, grid%j_high-1
+      do i = grid%i_low, grid%i_high
+          dx = grid%x(i,j+1) - grid%x(i,j)
+          dy = grid%y(i,j+1) - grid%y(i,j)
+          grid%n_xi(i,j,1) = dy
+          grid%n_xi(i,j,2) = -dx
+          grid%A_xi(i,j) = sqrt(grid%n_xi(i,j,1)**2 + grid%n_xi(i,j,2)**2)
+          if (grid%A_xi(i,j) > zero) then
+              grid%n_xi(i,j,1) = grid%n_xi(i,j,1) / grid%A_xi(i,j)
+              grid%n_xi(i,j,2) = grid%n_xi(i,j,2) / grid%A_xi(i,j)
+          else
+              grid%n_xi(i,j,1) = zero
+              grid%n_xi(i,j,2) = zero
+          end if
+          grid%n_xi_avg(i,j,:) = grid%n_xi(i,j,:)
+      end do
+  end do
+
+  !  Compute face areas and normal vectors (eta-direction, horizontal faces)
+  do j = grid%j_low, grid%j_high
+      do i = grid%i_low, grid%i_high-1
+          dx = grid%x(i+1,j) - grid%x(i,j)
+          dy = grid%y(i+1,j) - grid%y(i,j)
+          grid%n_eta(i,j,1) = dy
+          grid%n_eta(i,j,2) = dx
+          grid%A_eta(i,j) = sqrt(grid%n_eta(i,j,1)**2 + grid%n_eta(i,j,2)**2)
+          if (grid%A_eta(i,j) > zero) then
+              grid%n_eta(i,j,1) = -grid%n_eta(i,j,1) / grid%A_eta(i,j)
+              grid%n_eta(i,j,2) = grid%n_eta(i,j,2) / grid%A_eta(i,j)
+          else
+              grid%n_eta(i,j,1) = zero
+              grid%n_eta(i,j,2) = zero
+          end if
+          grid%n_eta_avg(i,j,:) = grid%n_eta(i,j,:)
+      end do
+  end do
+
+  ! Compute cell volumes (area in 2D) using the shoelace formula
+  do j = grid%j_cell_low, grid%j_cell_high
+      do i = grid%i_cell_low, grid%i_cell_high
+          grid%V(i,j) = half * abs( &
+              (grid%x(i,j) * grid%y(i+1,j) + grid%x(i+1,j) * grid%y(i+1,j+1) + &
+               grid%x(i+1,j+1) * grid%y(i,j+1) + grid%x(i,j+1) * grid%y(i,j)) - &
+              (grid%y(i,j) * grid%x(i+1,j) + grid%y(i+1,j) * grid%x(i+1,j+1) + &
+               grid%y(i+1,j+1) * grid%x(i,j+1) + grid%y(i,j+1) * grid%x(i,j)) &
+          )
+      end do
+  end do
+
 end subroutine cell_geometry
 
 subroutine deallocate_grid( grid )
@@ -323,7 +269,7 @@ subroutine deallocate_grid( grid )
     type( grid_t ), intent( inout ) :: grid
     
     deallocate( grid%x, grid%y, grid%xc, grid%yc, grid%A_xi, grid%A_eta, &
-                grid%n_xi, grid%n_eta, grid%n_xi_avg, grid%n_eta_avg, grid%V )
+                grid%n_xi, grid%n_eta,  grid%V )
     
   end subroutine deallocate_grid
     
@@ -336,6 +282,9 @@ module geometry
     use grid_type
     
     implicit none
+    private
+  
+    public :: cartesian_grid,write_tecplot_file
     
 contains
 
@@ -345,11 +294,13 @@ subroutine cartesian_grid(grid)
     use set_inputs, only : imax, jmax, xmin, xmax, ymin, ymax, n_ghost
     use set_inputs, only : i_low, i_high, j_low, j_high
     use set_inputs, only : ig_low, ig_high, jg_low, jg_high
+    use set_inputs, only : i_cell_low, i_cell_high, j_cell_low, j_cell_high
     integer :: i,j
 
     type(grid_t),intent(inout) ::grid
 
-    call allocate_grid(grid)
+
+! Set grid indices before allocation
     grid%i_low   = i_low
     grid%j_low   = j_low
     grid%i_high  = i_high
@@ -358,17 +309,66 @@ subroutine cartesian_grid(grid)
     grid%jg_low  = jg_low
     grid%ig_high = ig_high
     grid%jg_high = jg_high
+    grid%i_cell_low  = i_cell_low
+    grid%i_cell_high = i_cell_high
+    grid%j_cell_low  = j_cell_low
+    grid%j_cell_high = j_cell_high
+    grid%imax = imax
+    grid%jmax = jmax
+    grid%n_ghost = n_ghost
+
+    call allocate_grid(grid)
 
 
 
-    do j = j_low,j_high+1
-        do i = i_low,i_high+1
-          grid%x(i,j) = xmin + real(i-1,prec)/real(imax-1,prec)*(xmax-xmin)
-          grid%y(i,j) = ymin + real(j-1,prec)/real(jmax-1,prec)*(ymax-ymin)
+    do j = grid%j_low, grid%j_high
+        do i = grid%i_low, grid%i_high
+            ! For imax=3, this gives vertices at x=0, 0.5, 1.0
+            grid%x(i,j) = xmin + real(i-grid%i_low, prec) * (xmax-xmin) / real(grid%i_high-grid%i_low, prec)
+            grid%y(i,j) = ymin + real(j-grid%j_low, prec) * (ymax-ymin) / real(grid%j_high-grid%j_low, prec)
         end do
-      end do
+    end do
   
 end subroutine cartesian_grid    
+
+subroutine write_tecplot_file(grid, filename)
+  use set_precision, only : prec
+  use set_constants, only : zero
+  type(grid_t), intent(in) :: grid
+  character(len=*), intent(in) :: filename
+  integer :: i, j, unit
+  real(prec) :: a_xi, n_xi_x, n_xi_y, a_eta, n_eta_x, n_eta_y
+
+  ! Open the file
+  open(newunit=unit, file=trim(filename), status='replace', action='write')
+
+  ! Write the Tecplot header
+  write(unit, '(A)') 'TITLE = "2D Cartesian Grid with Face Areas and Normals"'
+  write(unit, '(A)') 'VARIABLES = "X", "Y", "A_xi", "n_xi_x", "n_xi_y", "A_eta", "n_eta_x", "n_eta_y"'
+  write(unit, '(A,I0,A,I0,A)') 'ZONE I=', grid%i_high - grid%i_low + 1, &
+                               ', J=', grid%j_high - grid%j_low + 1, &
+                               ', DATAPACKING=POINT'
+
+  ! Write the data for each vertex
+  do j = grid%j_low, grid%j_high
+      do i = grid%i_low, grid%i_high
+          a_xi = grid%A_xi(i,j)
+          n_xi_x = grid%n_xi(i,j,1)
+          n_xi_y = grid%n_xi(i,j,2)
+          a_eta = grid%A_eta(i,j)
+          n_eta_x = grid%n_eta(i,j,1)
+          n_eta_y = grid%n_eta(i,j,2)
+
+          ! Write the data
+          write(unit, '(8E15.7)') grid%x(i,j), grid%y(i,j), &
+                                  a_xi, n_xi_x, n_xi_y, a_eta, n_eta_x, n_eta_y
+      end do
+  end do
+
+  close(unit)
+end subroutine write_tecplot_file
+
+
 end module geometry
 
 program main
@@ -376,7 +376,7 @@ program main
   use set_constants, only : set_derived_constants
   use set_inputs,only : set_derived_inputs
   use grid_type
-  use geometry
+  use geometry, only : write_tecplot_file,cartesian_grid
   
   implicit none
   
@@ -397,19 +397,37 @@ program main
   print *, "Grid Area Vectors and Normals:"
   print *, "------------------------------"
   
-  do j = grid%j_low, grid%j_high
+  ! CHANGE: Print only for interior and boundary faces
+  ! A_xi, n_xi for i_low:i_high+1, j_low:j_high
+  ! Print for interior and right boundary faces
+ ! Loop over faces for A_xi and n_xi
+  do j = grid%j_low, grid%j_high-1
     do i = grid%i_low, grid%i_high
-      print *, "Cell (", i, ",", j, "):"
-      print *, "  A_xi  =", grid%A_xi(i,j)
-      print *, "  A_eta =", grid%A_eta(i,j)
-      print *, "  n_xi  = (", grid%n_xi(i,j,1), ",", grid%n_xi(i,j,2), ")"
-      print *, "  n_eta = (", grid%n_eta(i,j,1), ",", grid%n_eta(i,j,2), ")"
-      print *, "  Volume =", grid%V(i,j)
-      print *, "  Center = (", grid%xc(i,j), ",", grid%yc(i,j), ")"
+        print *, "Vertical Face (xi) at (", i, ",", j, ")"
+        print*, "  A_xi  =", grid%A_xi(i,j)
+        print *, "  n_xi  = (", grid%n_xi(i,j,1), ",", grid%n_xi(i,j,2), ")"
     end do
-  end do
+end do
+
+! Correct loop for eta-direction faces
+do j = grid%j_low, grid%j_high
+    do i = grid%i_low, grid%i_high-1
+        print*, "Horizontal Face (eta) at (", i, ",", j, ")"
+        print *, "  A_eta =", grid%A_eta(i,j)
+        print*, "  n_eta = (", grid%n_eta(i,j,1), ",", grid%n_eta(i,j,2), ")"
+    end do
+end do
+
+! Special printing for top boundary faces (j=grid%j_high)
+do i = grid%i_low, grid%i_high-1
+    print *, "Top Boundary Face (eta) at (", i, ",", grid%j_high, ")"
+    print*, "  A_eta =", grid%A_eta(i,grid%j_high)
+    print *, "  n_eta = (", grid%n_eta(i,grid%j_high,1), ",", grid%n_eta(i,grid%j_high,2), ")"
+end do
+call write_tecplot_file(grid, "grid_output.dat")
   
   ! Clean up
+
   call deallocate_grid(grid)
   
 end program main

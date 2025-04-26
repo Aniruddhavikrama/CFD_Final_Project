@@ -5,11 +5,30 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": "(gdb) Fortran",
+        "name": "(gdb) Fortran: dump",
         "type": "cppdbg",
         "request": "launch",
         // "program": "/home/aniruddhav/CFD_Project/Nozzle/nozz",
         "program": "/home/aniruddhav/CFD_Project/CFD6145_Final_Project/dump/nozz",
+        "args": [], // Possible input args for a.out
+        "stopAtEntry": false,
+        "cwd": "/home/aniruddhav/CFD_Project/CFD6145_Final_Project/dump",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "setupCommands": [
+          {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+          }
+        ]
+      },
+      {
+        "name": "(gdb) Fortran: proj",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build/bin/proj",
         "args": [], // Possible input args for a.out
         "stopAtEntry": false,
         "cwd": "/home/aniruddhav/CFD_Project/CFD6145_Final_Project/dump",

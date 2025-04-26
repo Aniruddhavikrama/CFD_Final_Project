@@ -3,5 +3,8 @@
       {
           "path": "."
       }
-  ]
+  ],
+  "settings": {
+    "fortran.linter.modOutput": "${workspaceFolder}/.fmod"
+  }
 }

@@ -1,6 +1,6 @@
 # Need 3.7 for submodule support
-cmake_minimum_required(VERSION 3.27)
-project( Q1D Fortran )
+cmake_minimum_required(VERSION 3.7)
+project( proj Fortran )
 
 #=============================================================================80
 # CMake macros
@@ -8,7 +8,7 @@ project( Q1D Fortran )
 include( ${CMAKE_SOURCE_DIR}/cmake/macros/add_exe_sources.txt  )
 include( ${CMAKE_SOURCE_DIR}/cmake/macros/add_lib_sources.txt  )
 
-set( _common_libraries "lib" )
+# set( _common_libraries "lib" )
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 #=============================================================================80
@@ -55,7 +55,14 @@ add_subdirectory(src)
 #=============================================================================80
 # Add library and executables
 #=============================================================================80
+add_library( lib ${LIB_SRCS} )
+target_link_libraries( lib )
+set_target_properties( lib PROPERTIES
+                            COMPILE_FLAGS "${CMAKE_Fortran_FLAGS}"
+                            LINK_FLAGS    "${CMAKE_FORTRAN_LINK_FLAGS}" )
+
 add_executable( proj ${proj_sources} )
-set_target_properties( nozz PROPERTIES
+target_link_libraries( proj lib )
+set_target_properties( proj PROPERTIES
                             COMPILE_FLAGS "${CMAKE_Fortran_FLAGS}"
                             LINK_FLAGS    "${CMAKE_FORTRAN_LINK_FLAGS}" )
