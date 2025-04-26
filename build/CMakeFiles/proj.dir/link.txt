@@ -1,0 +1,1 @@
+/home/aniruddhav/miniconda3/envs/hdf5_test/bin/gfortran -g  CMakeFiles/proj.dir/src/main.f90.o -o bin/proj  lib/liblib.a 

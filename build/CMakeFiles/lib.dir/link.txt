@@ -1,0 +1,2 @@
+/usr/bin/ar qc lib/liblib.a CMakeFiles/lib.dir/src/set_precision.f90.o CMakeFiles/lib.dir/src/set_constants.f90.o CMakeFiles/lib.dir/src/fluid_constants.f90.o CMakeFiles/lib.dir/src/set_inputs.f90.o CMakeFiles/lib.dir/src/grid_type.f90.o CMakeFiles/lib.dir/src/geometry.f90.o CMakeFiles/lib.dir/src/variable_conversion.f90.o
+/usr/bin/ranlib lib/liblib.a
