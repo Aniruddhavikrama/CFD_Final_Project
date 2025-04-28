@@ -9,12 +9,13 @@ module set_inputs
   public :: i_high, i_low, ig_high, ig_low
   public :: j_high, j_low, jg_high, jg_low
   public :: i_cell_high, i_cell_low, j_cell_high, j_cell_low
-  public :: set_derived_inputs
+  public :: set_derived_inputs,CFL
+  public :: cartesian_grid_flag
 
 
 
-  integer :: imax           = 3
-  integer :: jmax           = 3
+  integer :: imax           = 2
+  integer :: jmax           = 2
   integer :: i_low          = 0  ! Now will represent face index lower bound
   integer :: i_high         = 0  ! Now will represent face index upper bound
   integer :: i_cell_low     = 0  ! New: cell index lower bound
@@ -29,12 +30,15 @@ module set_inputs
   integer :: jg_high        = 0
   integer :: neq            = 4
   integer :: n_ghost        = 2
+  integer :: cartesian_grid_flag = 0  ! Switch: 1 for Cartesian, 0 for curvilinear from file
+
 
   real(prec) :: xmin       = zero
   real(prec) :: xmax       = one
   real(prec) :: ymin       = zero
   real(prec) :: ymax       = one
-
+  real(prec) :: CFL =       0.1_prec
+   
   
 contains
 

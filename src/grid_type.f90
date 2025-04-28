@@ -104,13 +104,30 @@ subroutine cell_geometry(grid)
         end do
     end do
   
-    !  Compute face areas and normal vectors (eta-direction, horizontal faces)
+    ! Compute face areas and normal vectors for top boundary (xi-direction, j = grid%j_high)
+    do i = grid%i_low, grid%i_high
+        dx = grid%x(i,grid%j_high) - grid%x(i,grid%j_high-1)
+        dy = grid%y(i,grid%j_high) - grid%y(i,grid%j_high-1)
+        grid%n_xi(i,grid%j_high,1) = dy
+        grid%n_xi(i,grid%j_high,2) = -dx
+        grid%A_xi(i,grid%j_high) = sqrt(grid%n_xi(i,grid%j_high,1)**2 + grid%n_xi(i,grid%j_high,2)**2)
+        if (grid%A_xi(i,grid%j_high) > zero) then
+            grid%n_xi(i,grid%j_high,1) = grid%n_xi(i,grid%j_high,1) / grid%A_xi(i,grid%j_high)
+            grid%n_xi(i,grid%j_high,2) = grid%n_xi(i,grid%j_high,2) / grid%A_xi(i,grid%j_high)
+        else
+            grid%n_xi(i,grid%j_high,1) = zero
+            grid%n_xi(i,grid%j_high,2) = zero
+        end if
+        grid%n_xi_avg(i,grid%j_high,:) = grid%n_xi(i,grid%j_high,:)
+    end do
+  
+    ! Compute face areas and normal vectors (eta-direction, horizontal faces)
     do j = grid%j_low, grid%j_high
         do i = grid%i_low, grid%i_high-1
             dx = grid%x(i+1,j) - grid%x(i,j)
             dy = grid%y(i+1,j) - grid%y(i,j)
             grid%n_eta(i,j,1) = dy
-            grid%n_eta(i,j,2) = dx
+            grid%n_eta(i,j,2) = -dx
             grid%A_eta(i,j) = sqrt(grid%n_eta(i,j,1)**2 + grid%n_eta(i,j,2)**2)
             if (grid%A_eta(i,j) > zero) then
                 grid%n_eta(i,j,1) = -grid%n_eta(i,j,1) / grid%A_eta(i,j)
@@ -121,6 +138,23 @@ subroutine cell_geometry(grid)
             end if
             grid%n_eta_avg(i,j,:) = grid%n_eta(i,j,:)
         end do
+    end do
+  
+    ! Compute face areas and normal vectors for right boundary (eta-direction, i = grid%i_high)
+    do j = grid%j_low, grid%j_high
+        dx = grid%x(grid%i_high,j) - grid%x(grid%i_high-1,j)
+        dy = grid%y(grid%i_high,j) - grid%y(grid%i_high-1,j)
+        grid%n_eta(grid%i_high,j,1) = dy
+        grid%n_eta(grid%i_high,j,2) = -dx
+        grid%A_eta(grid%i_high,j) = sqrt(grid%n_eta(grid%i_high,j,1)**2 + grid%n_eta(grid%i_high,j,2)**2)
+        if (grid%A_eta(grid%i_high,j) > zero) then
+            grid%n_eta(grid%i_high,j,1) = -grid%n_eta(grid%i_high,j,1) / grid%A_eta(grid%i_high,j)
+            grid%n_eta(grid%i_high,j,2) = grid%n_eta(grid%i_high,j,2) / grid%A_eta(grid%i_high,j)
+        else
+            grid%n_eta(grid%i_high,j,1) = zero
+            grid%n_eta(grid%i_high,j,2) = zero
+        end if
+        grid%n_eta_avg(grid%i_high,j,:) = grid%n_eta(grid%i_high,j,:)
     end do
   
     ! Compute cell volumes (area in 2D) using the shoelace formula

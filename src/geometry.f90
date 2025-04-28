@@ -4,6 +4,9 @@ module geometry
   use grid_type
   
   implicit none
+  private
+
+  public :: cartesian_grid,write_tecplot_file,read_grid
   
 contains
 
@@ -40,52 +43,144 @@ subroutine cartesian_grid(grid)
 
 
 
-
-  do j = grid%j_low, grid%j_high
-    do i = grid%i_low, grid%i_high
-        ! For imax=3, this gives vertices at x=0, 0.5, 1.0
-        grid%x(i,j) = xmin + real(i-grid%i_low, prec) * (xmax-xmin) / real(grid%i_high-grid%i_low, prec)
-        grid%y(i,j) = ymin + real(j-grid%j_low, prec) * (ymax-ymin) / real(grid%j_high-grid%j_low, prec)
-    end do
-end do
-
-end subroutine cartesian_grid    
-
-subroutine write_tecplot_file(grid, filename)
-  use set_precision, only : prec
-  use set_constants, only : zero
-  type(grid_t), intent(in) :: grid
-  character(len=*), intent(in) :: filename
-  integer :: i, j, unit
-  real(prec) :: a_xi, n_xi_x, n_xi_y, a_eta, n_eta_x, n_eta_y
-
-  ! Open the file
-  open(newunit=unit, file=trim(filename), status='replace', action='write')
-
-  ! Write the Tecplot header
-  write(unit, '(A)') 'TITLE = "2D Cartesian Grid with Face Areas and Normals"'
-  write(unit, '(A)') 'VARIABLES = "X", "Y", "A_xi", "n_xi_x", "n_xi_y", "A_eta", "n_eta_x", "n_eta_y"'
-  write(unit, '(A,I0,A,I0,A)') 'ZONE I=', grid%i_high - grid%i_low + 1, &
-                               ', J=', grid%j_high - grid%j_low + 1, &
-                               ', DATAPACKING=POINT'
-
-  ! Write the data for each vertex
   do j = grid%j_low, grid%j_high
       do i = grid%i_low, grid%i_high
-          a_xi = grid%A_xi(i,j)
-          n_xi_x = grid%n_xi(i,j,1)
-          n_xi_y = grid%n_xi(i,j,2)
-          a_eta = grid%A_eta(i,j)
-          n_eta_x = grid%n_eta(i,j,1)
-          n_eta_y = grid%n_eta(i,j,2)
-
-          ! Write the data
-          write(unit, '(8E15.7)') grid%x(i,j), grid%y(i,j), &
-                                  a_xi, n_xi_x, n_xi_y, a_eta, n_eta_x, n_eta_y
+          ! For imax=3, this gives vertices at x=0, 0.5, 1.0
+          grid%x(i,j) = xmin + real(i-grid%i_low, prec) * (xmax-xmin) / real(grid%i_high-grid%i_low, prec)
+          grid%y(i,j) = ymin + real(j-grid%j_low, prec) * (ymax-ymin) / real(grid%j_high-grid%j_low, prec)
       end do
   end do
 
-  close(unit)
+end subroutine cartesian_grid   
+
+
+subroutine read_grid(grid, grid_file, ierr)
+  type(grid_t),    intent(inout) :: grid
+  character(*),    intent(in)    :: grid_file
+  integer,         intent(out)   :: ierr
+
+  integer :: ios, unit_grid
+  integer :: nblocks, blockID
+  integer :: ni, nj
+  integer :: i, j
+
+  ierr = 0
+
+  !––– open with a free unit number –––
+  open(newunit=unit_grid, file=trim(grid_file), status='old', form='formatted', &
+       iostat=ios)
+  if (ios /= 0) then
+    ierr = ios
+    print *, '*** Error: cannot open grid file ', trim(grid_file)
+    return
+  end if
+
+  !––– skip the block‐count line –––
+  read(unit_grid, *, iostat=ios) nblocks
+  if (ios /= 0) then
+    ierr = ios
+    print *, '*** Error: reading block count from ', trim(grid_file)
+    close(unit_grid)
+    return
+  end if
+
+  !––– read ni, nj, (and discard any 3rd integer) –––
+  read(unit_grid, *, iostat=ios) ni, nj, blockID
+  if (ios /= 0) then
+    ierr = ios
+    print *, '*** Error: reading dims from ', trim(grid_file)
+    close(unit_grid)
+    return
+  end if
+
+  if (ni < 2 .or. nj < 2) then
+    ierr = 1
+    print *, '*** Error: invalid grid dimensions: ni=', ni, ' nj=', nj
+    close(unit_grid)
+    return
+  end if
+
+  !––– convert to cell‐counts and set all our index bounds –––
+  grid%imax = ni - 1
+  grid%jmax = nj - 1
+
+  grid%i_cell_low  = 1
+  grid%i_cell_high = grid%imax
+  grid%j_cell_low  = 1
+  grid%j_cell_high = grid%jmax
+
+  grid%i_low  = grid%i_cell_low
+  grid%i_high = grid%i_cell_high + 1
+  grid%j_low  = grid%j_cell_low
+  grid%j_high = grid%j_cell_high + 1
+
+  grid%ig_low  = grid%i_cell_low - n_ghost
+  grid%ig_high = grid%i_cell_high + n_ghost
+  grid%jg_low  = grid%j_cell_low - n_ghost
+  grid%jg_high = grid%j_cell_high + n_ghost
+
+  !––– allocate all arrays (vertices include ghosts) –––
+  call allocate_grid(grid)
+
+  !––– read X‐coordinates into the 1:ni × 1:nj interior –––
+  read(unit_grid, *, iostat=ios) (( grid%x(i,j), i = 1, ni ), j = 1, nj)
+  if (ios /= 0) then
+    ierr = ios
+    print *, '*** Error: reading X coords from ', trim(grid_file)
+    call deallocate_grid(grid)
+    close(unit_grid)
+    return
+  end if
+
+  !––– read Y‐coordinates –––
+  read(unit_grid, *, iostat=ios) (( grid%y(i,j), i = 1, ni ), j = 1, nj)
+  if (ios /= 0) then
+    ierr = ios
+    print *, '*** Error: reading Y coords from ', trim(grid_file)
+    call deallocate_grid(grid)
+    close(unit_grid)
+    return
+  end if
+
+  close(unit_grid)
+end subroutine read_grid
+
+
+subroutine write_tecplot_file(grid, filename)
+use set_precision, only : prec
+use set_constants, only : zero
+type(grid_t), intent(in) :: grid
+character(len=*), intent(in) :: filename
+integer :: i, j, unit
+real(prec) :: a_xi, n_xi_x, n_xi_y, a_eta, n_eta_x, n_eta_y
+
+! Open the file
+open(newunit=unit, file=trim(filename), status='replace', action='write')
+
+! Write the Tecplot header
+write(unit, '(A)') 'TITLE = "2D Cartesian Grid with Face Areas and Normals"'
+write(unit, '(A)') 'VARIABLES = "X", "Y", "A_xi", "n_xi_x", "n_xi_y", "A_eta", "n_eta_x", "n_eta_y"'
+write(unit, '(A,I0,A,I0,A)') 'ZONE I=', grid%i_high - grid%i_low + 1, &
+                             ', J=', grid%j_high - grid%j_low + 1, &
+                             ', DATAPACKING=POINT'
+
+! Write the data for each vertex
+do j = grid%j_low, grid%j_high
+    do i = grid%i_low, grid%i_high
+        a_xi = grid%A_xi(i,j)
+        n_xi_x = grid%n_xi(i,j,1)
+        n_xi_y = grid%n_xi(i,j,2)
+        a_eta = grid%A_eta(i,j)
+        n_eta_x = grid%n_eta(i,j,1)
+        n_eta_y = grid%n_eta(i,j,2)
+
+        ! Write the data
+        write(unit, '(8E15.7)') grid%x(i,j), grid%y(i,j), &
+                                a_xi, n_xi_x, n_xi_y, a_eta, n_eta_x, n_eta_y
+    end do
+end do
+
+close(unit)
 end subroutine write_tecplot_file
 
 

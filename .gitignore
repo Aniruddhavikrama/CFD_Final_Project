@@ -1,0 +1,7 @@
+*.mod
+*.gcda
+*.gcno
+*.dat
+*.x
+dump/
+build/

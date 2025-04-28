@@ -1,6 +1,0 @@
-/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build/CMakeFiles/lib.dir
-/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build/CMakeFiles/proj.dir
-/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build/CMakeFiles/edit_cache.dir
-/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build/CMakeFiles/rebuild_cache.dir
-/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build/src/CMakeFiles/edit_cache.dir
-/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build/src/CMakeFiles/rebuild_cache.dir
