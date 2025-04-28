@@ -146,7 +146,7 @@ subroutine read_grid(grid, grid_file, ierr)
 end subroutine read_grid
 
 
-subroutine write_tecplot_file(grid, filename)
+subroutine write_tecplot_file_old(grid, filename)
 use set_precision, only : prec
 use set_constants, only : zero
 type(grid_t), intent(in) :: grid
@@ -181,7 +181,115 @@ do j = grid%j_low, grid%j_high
 end do
 
 close(unit)
-end subroutine write_tecplot_file
+end subroutine write_tecplot_file_old
+
+
+subroutine write_tecplot_file(grid, filename)
+  use set_precision, only : prec
+  use set_constants, only : zero
+  type(grid_t), intent(in) :: grid
+  character(len=*), intent(in) :: filename
+  integer :: i, j, unit, cnt
+  real(prec) :: a_xi, n_xi_x, n_xi_y, a_eta, n_eta_x, n_eta_y
+  
+  ! Open the file
+  open(newunit=unit, file=trim(filename), status='replace', action='write')
+  
+  ! Write the Tecplot header
+  write(unit, '(A)') 'TITLE = "2D Cartesian Grid with Face Areas and Normals"'
+  write(unit, '(A)') 'VARIABLES = "X", "Y", "A_xi", "n_xi_x", "n_xi_y", "A_eta", "n_eta_x", "n_eta_y"'
+  write(unit, '(A,I0,A,I0,A)') 'ZONE I=', grid%i_high - grid%i_low + 1, &
+                               ', J=', grid%j_high - grid%j_low + 1, &
+                               ', DATAPACKING=BLOCK'
+  ! write(unit, '(A)') 'Varlocation=([3-8]=CELLCENTERED)'
+  write(unit, '(A)') 'DT=(DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE)'
+  
+  ! Write nodal data
+
+  write(unit,'(E24.16)') ( ( grid%x(i,j), i = grid%i_low, grid%i_high ), &
+                                          j = grid%j_low, grid%j_high )
+  write(unit,'(E24.16)') ( ( grid%y(i,j), i = grid%i_low, grid%i_high ), &
+                                          j = grid%j_low, grid%j_high )
+  ! write cell-centered data
+  ! write(unit,'(E24.16)') ( ( grid%A_xi(i,j), i = grid%i_low, grid%i_high-1 ), &
+  !                                            j = grid%j_low, grid%j_high-1 )
+  ! write(unit,'(E24.16)') ( ( grid%n_xi(i,j,1), i = grid%i_low, grid%i_high-1 ), &
+  !                                            j = grid%j_low, grid%j_high-1 )
+  ! write(unit,'(E24.16)') ( ( grid%n_xi(i,j,2), i = grid%i_low, grid%i_high-1 ), &
+  !                                            j = grid%j_low, grid%j_high-1 )
+  ! write(unit,'(E24.16)') ( ( grid%A_eta(i,j), i = grid%i_low, grid%i_high-1 ), &
+  !                                            j = grid%j_low, grid%j_high-1 )
+  ! write(unit,'(E24.16)') ( ( grid%n_eta(i,j,1), i = grid%i_low, grid%i_high-1 ), &
+  !                                            j = grid%j_low, grid%j_high-1 )
+  ! write(unit,'(E24.16)') ( ( grid%n_eta(i,j,2), i = grid%i_low, grid%i_high-1 ), &
+  !                                            j = grid%j_low, grid%j_high-1 )
+
+  cnt = 0
+  do j = grid%j_low, grid%j_high
+    do i = grid%i_low, grid%i_high
+      if (j==grid%j_high) then
+        write(unit,'(E24.16)') zero
+      else
+        write(unit,'(E24.16)') grid%A_xi(i,j)
+      end if
+    end do
+  end do
+
+  do j = grid%j_low, grid%j_high
+    do i = grid%i_low, grid%i_high
+      if (j==grid%j_high) then
+        write(unit,'(E24.16)') zero
+      else
+        write(unit,'(E24.16)') grid%n_xi(i,j,1)
+      end if
+    end do
+  end do
+
+  do j = grid%j_low, grid%j_high
+    do i = grid%i_low, grid%i_high
+      if (j==grid%j_high) then
+        write(unit,'(E24.16)') zero
+      else
+          write(unit,'(E24.16)') grid%n_xi(i,j,2)
+      end if
+    end do
+  end do
+
+
+
+  do j = grid%j_low, grid%j_high
+    do i = grid%i_low, grid%i_high
+      if (i==grid%i_high) then
+        write(unit,'(E24.16)') zero
+      else
+        write(unit,'(E24.16)') grid%A_eta(i,j)
+      end if
+    end do
+  end do
+
+  do j = grid%j_low, grid%j_high
+    do i = grid%i_low, grid%i_high
+      if (i==grid%i_high) then
+        write(unit,'(E24.16)') zero
+      else
+        write(unit,'(E24.16)') grid%n_eta(i,j,1)
+      end if
+    end do
+  end do
+
+  do j = grid%j_low, grid%j_high
+    do i = grid%i_low, grid%i_high
+      if (i==grid%i_high) then
+        write(unit,'(E24.16)') zero
+      else
+        write(unit,'(E24.16)') grid%n_eta(i,j,2)
+      end if
+    end do
+  end do
+
+  
+  close(unit)
+  end subroutine write_tecplot_file
 
 
 end module geometry
