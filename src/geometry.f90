@@ -2,11 +2,12 @@ module geometry
 
   use set_inputs
   use grid_type
+  use soln_type
   
   implicit none
   private
 
-  public :: cartesian_grid,write_tecplot_file,read_grid
+  public :: cartesian_grid,write_tecplot_file,read_grid,write_solution_dat
   
 contains
 
@@ -290,6 +291,53 @@ subroutine write_tecplot_file(grid, filename)
   
   close(unit)
   end subroutine write_tecplot_file
+
+  subroutine write_solution_dat(grid, soln, filename)
+    type(grid_t),       intent(in)    :: grid
+    type(soln_t),       intent(in)    :: soln
+    character(len=*),   intent(in)    :: filename
+
+    integer, parameter :: io_unit = 20
+    integer :: i,j,unit
+
+    !—Open (old file replaced automatically)—
+    open(newunit=unit, file=trim(filename), status='replace', action='write')
+
+    !—Tecplot header—
+    write(io_unit,'(A)') 'TITLE = "MMS Solution"'
+    write(io_unit,'(A)') 'VARIABLES = "Xcenter","Ycenter","rho","u","v","p","rho","rho_u","rho_v","E"'
+    write(io_unit,'(A,I0,A,I0,A)') 'ZONE I=', &
+         grid%i_cell_high - grid%i_cell_low + 1, &
+         ', J=', grid%j_cell_high - grid%j_cell_low + 1, &
+         ', DATAPACKING=BLOCK'
+    write(io_unit,'(A)') 'DT=(DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE)'
+
+    !—Block-writes of each field at cell centers—
+    write(io_unit,'(E24.16)') ((grid%xc(i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                                j=grid%j_cell_low,grid%j_cell_high)
+    write(io_unit,'(E24.16)') ((grid%yc(i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                                j=grid%j_cell_low,grid%j_cell_high)
+
+    write(io_unit,'(E24.16)') ((soln%V(1,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                                j=grid%j_cell_low,grid%j_cell_high)
+    write(io_unit,'(E24.16)') ((soln%V(2,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                                j=grid%j_cell_low,grid%j_cell_high)
+    write(io_unit,'(E24.16)') ((soln%V(3,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                                j=grid%j_cell_low,grid%j_cell_high)
+    write(io_unit,'(E24.16)') ((soln%V(4,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                                j=grid%j_cell_low,grid%j_cell_high)
+
+    write(io_unit,'(E24.16)') ((soln%U(1,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                                j=grid%j_cell_low,grid%j_cell_high)
+    write(io_unit,'(E24.16)') ((soln%U(2,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                                j=grid%j_cell_low,grid%j_cell_high)
+    write(io_unit,'(E24.16)') ((soln%U(3,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                                j=grid%j_cell_low,grid%j_cell_high)
+    write(io_unit,'(E24.16)') ((soln%U(4,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                                j=grid%j_cell_low,grid%j_cell_high)
+
+    close(io_unit)
+  end subroutine write_solution_dat
 
 
 end module geometry

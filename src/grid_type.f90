@@ -43,7 +43,7 @@ allocate(grid%y(grid%ig_low:grid%ig_high, grid%jg_low:grid%jg_high))
 allocate(grid%xc(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high))
 allocate(grid%yc(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high))
 
-! Allocate face areas (now directly use i_low:i_high, j_low:j_high)
+! Allocate face areas (use i_low:i_high, j_low:j_high)
 allocate(grid%A_xi(grid%i_low:grid%i_high, grid%j_low:grid%j_high-1))
 allocate(grid%A_eta(grid%i_low:grid%i_high-1, grid%j_low:grid%j_high))
 
@@ -72,19 +72,104 @@ grid%n_eta_avg = zero
 grid%V = zero
 end subroutine allocate_grid   
 
+! subroutine ghost_cells(grid)
+!     type(grid_t), intent(inout) :: grid
+!     integer :: i, j
+
+!     ! bottom
+!     do j = grid%j_low-1, grid%jg_low,-1
+!       do i = grid%i_low, grid%i_high+1
+!         grid%x(i,j) = two*grid%x(i,j+1) - grid%x(i,j+2)
+!         grid%y(i,j) = two*grid%y(i,j+1) - grid%y(i,j+2)
+!       end do
+!     end do
+
+!     ! top
+!     do j = grid%j_high+1, grid%jg_high
+!       do i = grid%i_low, grid%i_high+1
+!         grid%x(i,j) = two*grid%x(i,j-1) - grid%x(i,j-2)
+!         grid%y(i,j) = two*grid%y(i,j-1) - grid%y(i,j-2)
+!       end do
+!     end do
+
+!     ! left
+!     do j = grid%j_low, grid%j_high+1
+!        do i = grid%i_low-1, grid%ig_low,-1
+      
+!         grid%x(i,j) = two*grid%x(i+1,j) - grid%x(i+2,j)
+!         grid%y(i,j) = two*grid%y(i+1,j) - grid%y(i+2,j)
+!       end do
+!     end do
+
+!     ! right
+!     do j = grid%j_low, grid%j_high+1
+!         do i = grid%i_high+1, grid%ig_high
+!         grid%x(i,j) = two*grid%x(i-1,j) - grid%x(i-2,j)
+!         grid%y(i,j) = two*grid%y(i-1,j) - grid%y(i-2,j)
+!       end do
+!     end do
+
+
+!   end subroutine ghost_cells
+
 subroutine cell_geometry(grid)
     type(grid_t), intent(inout) :: grid
-    integer :: i, j
+    integer :: i, j,k
     real(prec) :: dx, dy
   
     ! Compute (approximate) cell centers (xc, yc) as the average of the four vertices
+    ! do j = grid%j_cell_low, grid%j_cell_high
+    !     do i = grid%i_cell_low, grid%i_cell_high
+    !         grid%xc(i,j) = fourth * (grid%x(i,j) + grid%x(i+1,j) + grid%x(i,j+1) + grid%x(i+1,j+1))
+    !         grid%yc(i,j) = fourth * (grid%y(i,j) + grid%y(i+1,j) + grid%y(i,j+1) + grid%y(i+1,j+1))
+    !     end do
+    ! end do
+    real(prec) :: area, cx, cy, term
+    real(kind=prec), dimension(4) :: x, y
+    
+    ! Compute cell centers (xc, yc) and volumes (V) using the shoelace formula
     do j = grid%j_cell_low, grid%j_cell_high
-        do i = grid%i_cell_low, grid%i_cell_high
-            grid%xc(i,j) = fourth * (grid%x(i,j) + grid%x(i+1,j) + grid%x(i,j+1) + grid%x(i+1,j+1))
-            grid%yc(i,j) = fourth * (grid%y(i,j) + grid%y(i+1,j) + grid%y(i,j+1) + grid%y(i+1,j+1))
+      do i = grid%i_cell_low, grid%i_cell_high
+        ! Define the four vertices of the quadrilateral cell (counterclockwise)
+        x(1) = grid%x(i,j)
+        y(1) = grid%y(i,j)
+        x(2) = grid%x(i+1,j)
+        y(2) = grid%y(i+1,j)
+        x(3) = grid%x(i+1,j+1)
+        y(3) = grid%y(i+1,j+1)
+        x(4) = grid%x(i,j+1)
+        y(4) = grid%y(i,j+1)
+
+        ! Initialize accumulators for area and centroid
+        area = zero
+        cx = zero
+        cy = zero
+
+        ! Compute signed area and centroid contributions using shoelace formula
+        do k = 1, 3
+          term = (x(k) * y(k+1) - x(k+1) * y(k))
+          area = area + term
+          cx = cx + (x(k) + x(k+1)) * term
+          cy = cy + (y(k) + y(k+1)) * term
         end do
+        term = (x(4) * y(1) - x(1) * y(4))
+        area = area + term
+        cx = cx + (x(4) + x(1)) * term
+        cy = cy + (y(4) + y(1)) * term
+
+        ! Finalize area (take absolute value for volume)
+        area = half * area
+        grid%V(i,j) = abs(area)
+
+        ! Finalize centroid (divide by 6 * area)
+
+          grid%xc(i,j) = cx / (6.0_prec * area)
+          grid%yc(i,j) = cy / (6.0_prec * area)
+
+      end do
     end do
-  
+    
+    
     ! Compute face areas and normal vectors (xi-direction, vertical faces)
     do j = grid%j_low, grid%j_high-1
         do i = grid%i_low, grid%i_high
@@ -173,7 +258,7 @@ subroutine deallocate_grid( grid )
   type( grid_t ), intent( inout ) :: grid
   
   deallocate( grid%x, grid%y, grid%xc, grid%yc, grid%A_xi, grid%A_eta, &
-              grid%n_xi, grid%n_eta,  grid%V )
+              grid%n_xi, grid%n_eta,  grid%V,grid%n_xi_avg,grid%n_eta_avg )
   
 end subroutine deallocate_grid
   
