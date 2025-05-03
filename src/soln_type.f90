@@ -3,6 +3,7 @@ module soln_type
     use set_inputs
     use fluid_constants,only: gamma
     use set_constants,only : zero,one,two,half
+    use grid_type,only : grid_t
     
     
     implicit none
@@ -10,6 +11,7 @@ module soln_type
     public :: soln_t,allocate_soln,deallocate_soln
 
     type soln_t
+    
 
     real(prec),allocatable,dimension(:,:,:) :: U !Conserved
     real(prec),allocatable,dimension(:,:,:) :: V !primitive
@@ -23,8 +25,8 @@ module soln_type
     ! real(prec), allocatable, dimension(:,:)     :: DEnorm
     ! ! real(prec), allocatable, dimension(:)     :: rnorm
     ! real(prec), allocatable, dimension(:,:,:) :: DE ! discretization error
-    ! real(prec), allocatable, dimension(:,:,:) :: Fxi  ! normal fluxes
-    ! real(prec), allocatable, dimension(:,:,:) :: Feta ! normal fluxes
+    real(prec), allocatable, dimension(:,:,:) :: Fxi  ! normal fluxes
+    real(prec), allocatable, dimension(:,:,:) :: Feta ! normal fluxes
     ! real(prec), allocatable, dimension(:,:,:) :: psi_p_xi  ! limiters
     ! real(prec), allocatable, dimension(:,:,:) :: psi_p_eta  ! limiters
     ! real(prec), allocatable, dimension(:,:,:) :: psi_m_xi  ! limiters
@@ -35,19 +37,20 @@ module soln_type
 
 contains
 
-subroutine allocate_soln(soln)
+subroutine allocate_soln(soln,grid)
     type(soln_t),intent(inout) :: soln
+    type(grid_t), intent(in) :: grid
 
-    allocate(soln%U( neq, i_cell_low:i_cell_high, j_cell_low:j_cell_high ), &
-            soln%V( neq, i_cell_low:i_cell_high, j_cell_low:j_cell_high ), &
+    allocate(soln%U( neq, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high ), &
+            soln%V( neq, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high ), &
             ! soln%S( neq, ig_low:ig_high, jg_low:jg_high ), &
             ! soln%R(  neq,i_low:i_high,   j_low:j_high )  , &                           
             ! soln%asnd( ig_low:ig_high, jg_low:jg_high ),   &
             ! soln%mach( ig_low:ig_high, jg_low:jg_high ),   &
             ! soln%temp( ig_low:ig_high, jg_low:jg_high ),   &
             ! soln%dt(   ig_low:ig_high, jg_low:jg_high ),   &
-            ! soln%Fxi(  neq, i_low-1:i_high, j_low:j_high ), &
-            ! soln%Feta( neq, i_low:i_high, j_low-1:j_high ), &
+            soln%Fxi(  neq, grid%i_low:grid%i_high, grid%j_low:grid%j_high ), &
+            soln%Feta( neq, grid%i_low:grid%i_high, grid%j_low:grid%j_high ), &
             ! soln%psi_p_xi(  neq, ig_low-1:ig_high, j_low:j_high ), &
             ! soln%psi_m_xi(  neq, ig_low-1:ig_high, j_low:j_high ), &
             ! soln%psi_p_eta( neq, i_low:i_high, jg_low-1:jg_high ), &
@@ -57,8 +60,8 @@ subroutine allocate_soln(soln)
 
 
             soln%U     = zero
-            ! soln%Fxi   = zero
-            ! soln%Feta  = zero
+            soln%Fxi   = zero
+            soln%Feta  = zero
             ! soln%S     = zero
             soln%V     = zero
             ! soln%R     = one
@@ -81,8 +84,8 @@ subroutine deallocate_soln(soln)
     type(soln_t),intent(inout) :: soln
 
     deallocate(     soln%U,     &
-                    ! soln%Fxi,   &
-                    ! soln%Feta,  &
+                    soln%Fxi,   &
+                    soln%Feta,  &
                     ! soln%S,     &
                     soln%V,     &
                     ! soln%R,     &

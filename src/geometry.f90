@@ -298,10 +298,10 @@ subroutine write_tecplot_file(grid, filename)
     character(len=*),   intent(in)    :: filename
 
     integer, parameter :: io_unit = 20
-    integer :: i,j,unit
+    integer :: i,j
 
     !—Open (old file replaced automatically)—
-    open(newunit=unit, file=trim(filename), status='replace', action='write')
+    open(unit=io_unit, file=trim(filename), status='replace', action='write')
 
     !—Tecplot header—
     write(io_unit,'(A)') 'TITLE = "MMS Solution"'

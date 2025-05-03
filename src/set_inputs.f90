@@ -11,7 +11,7 @@ module set_inputs
   public :: i_cell_high, i_cell_low, j_cell_high, j_cell_low
   public :: ig_cell_high, ig_cell_low, jg_cell_high, jg_cell_low
   public :: set_derived_inputs,CFL
-  public :: cartesian_grid_flag,Lmms
+  public :: cartesian_grid_flag,Lmms,kappa
 
 
 
@@ -36,6 +36,8 @@ module set_inputs
   integer :: neq            = 4
   integer :: n_ghost        = 2
   integer :: cartesian_grid_flag = 0  ! Switch: 1 for Cartesian, 0 for curvilinear from file
+  integer,public :: order =2
+  integer,public :: flux_scheme =1
 
 
   real(prec) :: xmin       = zero
@@ -44,6 +46,7 @@ module set_inputs
   real(prec) :: ymax       = one
   real(prec) :: CFL =       0.1_prec
   real(prec) :: Lmms     = 1.0_prec
+  real(prec) :: kappa=-1.0_prec !!!MUSCL Scheme
    
   
 contains
