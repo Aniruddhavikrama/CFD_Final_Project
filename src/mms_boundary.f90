@@ -4,6 +4,8 @@ module mms_boundary
     use soln_type,only : soln_t
     use grid_type,only : grid_t
     implicit none
+
+    public :: apply_mms_boundary
     
 contains
 subroutine apply_mms_boundary(grid, soln)

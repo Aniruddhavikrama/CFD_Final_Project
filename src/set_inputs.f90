@@ -38,6 +38,7 @@ module set_inputs
   integer :: cartesian_grid_flag = 0  ! Switch: 1 for Cartesian, 0 for curvilinear from file
   integer,public :: order =2
   integer,public :: flux_scheme =1
+  integer,public :: residual_out_freq= 1
 
 
   real(prec) :: xmin       = zero

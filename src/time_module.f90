@@ -6,7 +6,9 @@ module time_module
     use set_inputs,    only : j_low, j_high, jg_low, jg_high,CFL
     use grid_type, only : grid_t
     use soln_type, only : soln_t
-    use variable_conversion, only : speed_of_sound
+    use variable_conversion, only : speed_of_sound,prim2cons
+    use mms_boundary
+    use flux, only : compute_fluxes
 
     implicit none
 
@@ -14,10 +16,15 @@ module time_module
     subroutine calc_time_step(grid, soln)
         type(grid_t), intent(in)    :: grid
         type(soln_t), intent(inout) :: soln
-        ! real(prec), dimension(grid%i_low:grid%i_high, grid%j_low:grid%j_high-1) :: Lam_xi
-        ! real(prec), dimension(grid%i_low:grid%i_high-1, grid%j_low:grid%j_high) :: Lam_eta
-        real(prec), dimension(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) :: Lam_xi, Lam_eta
+        real(prec), allocatable :: Lam_xi(:,:), Lam_eta(:,:)
+        ! real(prec), dimension(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) :: Lam_xi
+        ! real(prec), dimension(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) :: Lam_eta
+        ! real(prec), dimension(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) :: Lam_xi, Lam_eta
+
+        
         integer :: i,j
+        allocate(Lam_xi(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high))
+        allocate(Lam_eta(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high))
 
 
     
@@ -34,6 +41,7 @@ module time_module
         soln%dt = CFL * grid%V / ( &
                    Lam_xi * grid%A_xi(grid%i_low:grid%i_high, grid%j_low:grid%j_high-1) + &
                    Lam_eta * grid%A_eta(grid%i_low:grid%i_high-1, grid%j_low:grid%j_high) )
+        deallocate(Lam_xi, Lam_eta)
       end subroutine calc_time_step
     
       subroutine explicit_RK(grid, soln)
@@ -51,7 +59,8 @@ module time_module
           ! Convert primitive to conserved variables
           call prim2cons(soln%U, soln%V)
           ! Compute fluxes
-          call calc_flux_2D(grid, soln)
+          call compute_fluxes(grid, soln)
+
           ! Compute residual
           call calc_residual(grid, soln)
           ! Update conserved variables
@@ -63,7 +72,7 @@ module time_module
                grid%V( grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)
           end do
           ! Update primitive variables
-          call update_states(soln)
+        !   call update_states(soln)
         end do
       end subroutine explicit_RK
     

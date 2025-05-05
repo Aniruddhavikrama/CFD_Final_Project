@@ -120,7 +120,7 @@ subroutine compute_fluxes(grid, soln)
     call select_flux()
 
     ! Compute left and right states at face indices
-    call compute_lr_states(soln%U, Lxi, Rxi, Leta, Reta)
+    call compute_lr_states(soln%U, Lxi, Rxi, Leta, Reta,grid)
 
     ! Limit primitive variables
     ! call limit_primitives(soln%U, Lxi)
@@ -246,8 +246,8 @@ subroutine vanleer_flux(VL, VR,nx,ny,F)
 
     ! Convective flux
     Fc(1) = (rhoL * aL * C_plus) + (rhoR * aR * C_minus)
-    Fc(2) = (rhoL * aL * C_plus * uL1) + (rhoR * aR * C_minus * uR1) + Fp*nx
-    Fc(3) = (rhoL * aL * C_plus * vL1) + (rhoR * aR * C_minus * vR1) + Fp*ny
+    Fc(2) = (rhoL * aL * C_plus * uL1) + (rhoR * aR * C_minus * uR1) + Fp(2)*nx
+    Fc(3) = (rhoL * aL * C_plus * vL1) + (rhoR * aR * C_minus * vR1) + Fp(2)*ny
     Fc(4) = (rhoL * aL * C_plus * hL) + (rhoR * aR * C_minus * hR)
   
     ! Total flux (in conservative form)
