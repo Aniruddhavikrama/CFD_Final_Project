@@ -3,6 +3,7 @@ module variable_conversion
     use set_precision,only : prec
     use set_constants,only: zero,one,two,half
     use fluid_constants, only : R_gas,gamma
+    use soln_type
 
 
     implicit none
@@ -12,6 +13,18 @@ module variable_conversion
     public :: speed_of_sound, prim2cons, cons2prim
     ! public :: update_states
 contains
+! subroutine update_states( soln )
+    
+!     type(soln_t), intent(inout) :: soln
+!     call cons2prim(soln%U,soln%V)
+!     !call limit_primitives(soln%V)
+!     call prim2cons(soln%U, soln%V)
+!     call speed_of_sound(soln%V(4,:,:),soln%V(1,:,:),soln%asnd)
+    
+!     soln%mach = sqrt(soln%V(2,:,:)**2 + soln%V(3,:,:)**2)/soln%asnd
+!     soln%temp = soln%V(4,:,:)/( soln%V(1,:,:)*R_gas )
+    
+!   end subroutine update_states
 
 
 subroutine speed_of_sound(pressure,rho,sound_speed)
