@@ -41,6 +41,7 @@ module set_inputs
   integer,public :: residual_out_freq= 1
 
 
+
   real(prec) :: xmin       = zero
   real(prec) :: xmax       = one
   real(prec) :: ymin       = zero

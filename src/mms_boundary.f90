@@ -3,6 +3,7 @@ module mms_boundary
     use set_constants
     use soln_type,only : soln_t
     use grid_type,only : grid_t
+    use variable_conversion
     implicit none
 
     public :: apply_mms_boundary
@@ -37,6 +38,8 @@ subroutine apply_mms_boundary(grid, soln)
         soln%V(:, i, grid%jg_high-1) = 2 * soln%V(:, i, grid%jg_high-2) - soln%V(:, i, grid%jg_high-3)
         soln%V(:, i, grid%jg_high  ) = 2 * soln%V(:, i, grid%jg_high-1) - soln%V(:, i, grid%jg_high-2)
       end do
+
+      call prim2cons(soln%U, soln%V)
 
   end subroutine apply_mms_boundary
     

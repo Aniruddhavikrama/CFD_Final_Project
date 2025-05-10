@@ -40,12 +40,12 @@ end subroutine select_flux
 
 subroutine compute_lr_states(U, Lxi, Rxi, Leta, Reta,grid)
     type(grid_t),intent(in)::grid
-    real(prec), dimension(grid%ig_low:grid%ig_high,grid%jg_low:grid%jg_high,neq), intent(in) :: U
-    real(prec), dimension(neq,grid%i_low:grid%i_high,grid%j_low:grid%j_high), intent(out) :: Lxi, Rxi
-    real(prec), dimension(neq,grid%i_low:grid%i_high,grid%j_low:grid%j_high), intent(out) :: Leta, Reta
-    real(prec), dimension(grid%ig_low:grid%ig_high,grid%jg_low:grid%jg_high,neq) :: V
-    real(prec), dimension(grid%ig_low:grid%ig_high,grid%jg_low:grid%jg_high,neq) :: psi_plus_xi, psi_minus_xi
-    real(prec), dimension(grid%ig_low:grid%ig_high,grid%jg_low:grid%jg_high,neq) :: psi_plus_eta, psi_minus_eta
+    real(prec), dimension(neq,grid%ig_low:grid%ig_high,grid%jg_low:grid%jg_high), intent(in) :: U
+    real(prec), dimension(neq,grid%i_low:grid%i_high,grid%j_low:grid%j_high-1), intent(out) :: Lxi, Rxi
+    real(prec), dimension(neq,grid%i_low:grid%i_high-1,grid%j_low:grid%j_high), intent(out) :: Leta, Reta
+    real(prec), dimension(neq,grid%ig_low:grid%ig_high,grid%jg_low:grid%jg_high) :: V
+    real(prec), dimension(neq,grid%ig_low:grid%ig_high,grid%jg_low:grid%jg_high) :: psi_plus_xi, psi_minus_xi
+    real(prec), dimension(neq,grid%ig_low:grid%ig_high,grid%jg_low:grid%jg_high) :: psi_plus_eta, psi_minus_eta
     real(prec) :: epsilon
     integer :: i, j
 
@@ -62,10 +62,10 @@ subroutine compute_lr_states(U, Lxi, Rxi, Leta, Reta,grid)
     ! Convert conservative to primitive variables
     do j = grid%jg_low, grid%jg_high
         do i = grid%ig_low, grid%ig_high
-            V(i,j,1) = U(i,j,1)  ! rho
-            V(i,j,2) = U(i,j,2) / U(i,j,1)  ! u
-            V(i,j,3) = U(i,j,3) / U(i,j,1)  ! v
-            V(i,j,4) = (gamma - one) * (U(i,j,4) - half * (U(i,j,2)**2 + U(i,j,3)**2) / U(i,j,1))  ! p
+            V(1,i,j) = U(1,i,j)  ! rho
+            V(2,i,j) = U(2,i,j) / U(1,i,j)  ! u
+            V(3,i,j) = U(3,i,j) / U(1,i,j)  ! v
+            V(4,i,j) = (gamma - one) * (U(4,i,j) - half * (U(2,i,j)**2 + U(3,i,j)**2) / U(1,i,j))  ! p
         end do
     end do
     ! call limit_primitives(U, V)
@@ -86,24 +86,24 @@ subroutine compute_lr_states(U, Lxi, Rxi, Leta, Reta,grid)
     ! xsi-direction extrapolation (faces at i_low:i_high)
     do j = grid%j_low, grid%j_high-1
         do i = grid%i_low, grid%i_high
-            Lxi(:,i,j) = V(i-1,j,:) + fourth * epsilon * ( &
-                (one - kappa) * psi_plus_xi(i-2,j,:) * (V(i-1,j,:) - V(i-2,j,:)) + &
-                (one + kappa) * psi_minus_xi(i-1,j,:) * (V(i,j,:) - V(i-1,j,:)))
-            Rxi(:,i,j) = V(i,j,:) - fourth * epsilon * ( &
-                (one - kappa) * psi_plus_xi(i,j,:) * (V(i+1,j,:) - V(i,j,:)) + &
-                (one + kappa) * psi_minus_xi(i-1,j,:) * (V(i,j,:) - V(i-1,j,:)))
+            Lxi(:,i,j) = V(:,i-1,j) + fourth * epsilon * ( &
+                (one - kappa) * psi_plus_xi(:,i-2,j) * (V(:,i-1,j) - V(:,i-2,j)) + &
+                (one + kappa) * psi_minus_xi(:,i-1,j) * (V(:,i,j) - V(:,i-1,j)))
+            Rxi(:,i,j) = V(:,i,j) - fourth * epsilon * ( &
+                (one - kappa) * psi_plus_xi(:,i,j) * (V(:,i+1,j) - V(:,i,j)) + &
+                (one + kappa) * psi_minus_xi(:,i-1,j) * (V(:,i,j) - V(:,i-1,j)))
         end do
     end do
 
     ! etadirection extrapolation (faces at j_low:j_high)
     do j = grid%j_low, grid%j_high
         do i = grid%i_low, grid%i_high-1
-            Leta(:,i,j) = V(i,j-1,:) + fourth * epsilon * ( &
-                (one - kappa) * psi_plus_eta(i,j-2,:) * (V(i,j-1,:) - V(i,j-2,:)) + &
-                (one + kappa) * psi_minus_eta(i,j-1,:) * (V(i,j,:) - V(i,j-1,:)))
-            Reta(:,i,j) = V(i,j,:) - fourth * epsilon * ( &
-                (one - kappa) * psi_plus_eta(i,j,:) * (V(i,j+1,:) - V(i,j,:)) + &
-                (one + kappa) * psi_minus_eta(i,j-1,:) * (V(i,j,:) - V(i,j-1,:)))
+            Leta(:,i,j) = V(:,i,j-1) + fourth * epsilon * ( &
+                (one - kappa) * psi_plus_eta(:,i,j-2) * (V(:,i,j-1) - V(:,i,j-2)) + &
+                (one + kappa) * psi_minus_eta(:,i,j-1) * (V(:,i,j) - V(:,i,j-1)))
+            Reta(:,i,j) = V(:,i,j) - fourth * epsilon * ( &
+                (one - kappa) * psi_plus_eta(:,i,j) * (V(:,i,j+1) - V(:,i,j)) + &
+                (one + kappa) * psi_minus_eta(:,i,j-1) * (V(:,i,j) - V(:,i,j-1)))
         end do
     end do
 end subroutine compute_lr_states
@@ -111,8 +111,8 @@ end subroutine compute_lr_states
 subroutine compute_fluxes(grid, soln)
     type(grid_t), intent(in)    :: grid
     type(soln_t), intent(inout) :: soln
-    real(prec), dimension(neq,grid%i_low:grid%i_high,grid%j_low:grid%j_high) :: Lxi, Rxi
-    real(prec), dimension(neq,grid%i_low:grid%i_high,grid%j_low:grid%j_high) :: Leta, Reta
+    real(prec), dimension(neq,grid%i_low:grid%i_high,grid%j_low:grid%j_high-1) :: Lxi, Rxi
+    real(prec), dimension(neq,grid%i_low:grid%i_high-1,grid%j_low:grid%j_high) :: Leta, Reta
     real(prec) :: nx, ny
     integer :: i, j
 
@@ -142,10 +142,11 @@ subroutine compute_fluxes(grid, soln)
         do i = grid%i_low, grid%i_high-1
             nx = grid%n_eta(i,j,1)
             ny = grid%n_eta(i,j,2)
+            ! print *, "nx and ny", nx,ny
             call flux_fun( Leta(:,i,j), Reta(:,i,j), nx, ny, soln%Feta(:,i,j) ) 
         end do
     end do
-end subroutine compute_fluxes
+    end subroutine compute_fluxes
 
 ! subroutine calculate_fluxes_normals(grid,soln)
 
@@ -241,13 +242,14 @@ subroutine vanleer_flux(VL, VR,nx,ny,F)
   
     ! Pressure flux
     Fp(1) = 0.0_prec
-    Fp(2) = D_plus * pL + D_minus * pR
-    Fp(3) = 0.0_prec
+    Fp(2) = (D_plus * pL + D_minus * pR)*nx
+    Fp(3) = (D_plus * pL + D_minus * pR)*ny
+    Fp(4) = 0.0_prec
 
     ! Convective flux
     Fc(1) = (rhoL * aL * C_plus) + (rhoR * aR * C_minus)
-    Fc(2) = (rhoL * aL * C_plus * uL1) + (rhoR * aR * C_minus * uR1) + Fp(2)*nx
-    Fc(3) = (rhoL * aL * C_plus * vL1) + (rhoR * aR * C_minus * vR1) + Fp(2)*ny
+    Fc(2) = (rhoL * aL * C_plus * uL1) + (rhoR * aR * C_minus * uR1) + Fp(2)
+    Fc(3) = (rhoL * aL * C_plus * vL1) + (rhoR * aR * C_minus * vR1) + Fp(3)
     Fc(4) = (rhoL * aL * C_plus * hL) + (rhoR * aR * C_minus * hR)
   
     ! Total flux (in conservative form)

@@ -22,12 +22,18 @@ set( CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
 set(CMAKE_GCC_FLAGS "" )
 
 # Custom debug build flags
+# set(
+#   GCC_USER_DEBUG_FLAGS
+#   "-g -Wall -Wextra -fimplicit-none -fcheck=all \
+#    -ffpe-trap=zero,underflow,overflow,invalid --coverage -fbacktrace \
+#    -fstack-protector-all -fstack-check -Wimplicit-procedure \
+#    -Wno-use-without-only -Wno-unused-dummy-argument \
+#    -fsanitize=address,undefined -fbounds-check"
+# )
+
 set(
   GCC_USER_DEBUG_FLAGS
-  "-g -Wall -Wextra -fimplicit-none -fcheck=all \
-   -ffpe-trap=zero,underflow,overflow,invalid --coverage -fbacktrace \
-   -fstack-protector-all -fstack-check -Wimplicit-procedure \
-   -Wno-use-without-only -Wno-unused-dummy-argument"
+  "-g -Wall -Wextra -fimplicit-none -fcheck=all -ffpe-trap=zero,underflow,overflow,invalid --coverage -fbacktrace -fstack-protector-all -fstack-check -Wimplicit-procedure -fsanitize=address,undefined -fbounds-check"
 )
 
 # Custom release build flags
@@ -38,9 +44,13 @@ set( CMAKE_Fortran_LINK_FLAGS_DEBUG "" )
 set( CMAKE_Fortran_LINK_FLAGS_RELEASE "" )
 
 # Append custom build flags to cmake flags
+# set(
+#   CMAKE_Fortran_FLAGS_DEBUG
+#   "${CMAKE_Fortran_FLAGS_DEBUG} ${USER_DEBUG_FLAGS}"
+# )
 set(
   CMAKE_Fortran_FLAGS_DEBUG
-  "${CMAKE_Fortran_FLAGS_DEBUG} ${USER_DEBUG_FLAGS}"
+  "${CMAKE_Fortran_FLAGS_DEBUG} -g -Wall -Wextra -fimplicit-none -fcheck=all -ffpe-trap=zero,underflow,overflow,invalid --coverage -fbacktrace -fstack-protector-all -fstack-check -Wimplicit-procedure -fsanitize=address,undefined -fbounds-check"
 )
 set(
   CMAKE_Fortran_FLAGS_RELEASE

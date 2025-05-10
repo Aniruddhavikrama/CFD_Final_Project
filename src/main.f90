@@ -1,18 +1,20 @@
 program main
     use set_precision, only : prec
-    use set_constants, only : set_derived_constants,one
-    use set_inputs, only : set_derived_inputs, cartesian_grid_flag, Lmms, residual_out_freq
+    use set_constants
+    use set_inputs
     use grid_type
     use geometry, only : write_tecplot_file, cartesian_grid, read_grid, write_solution_dat
     use init, only : initialize_mms
-    use soln_type, only : soln_t, allocate_soln, deallocate_soln
+    use mms_boundary
+    use soln_type
+    use flux
     use time_module, only : explicit_RK, calc_residual, residual_norms, calc_time_step
   
     implicit none
   
     type(grid_t) :: grid
     type(soln_t) :: soln
-    integer :: i, j, iter, max_iter
+    integer ::  iter, max_iter
     character(*), parameter :: grid_file = 'curv2d9_1.x'
     integer :: ierr
     real(prec), dimension(4) :: Rnorm
@@ -35,18 +37,23 @@ program main
   
     ! Write grid output
     call write_tecplot_file(grid, "grid_output.dat")
+
   
     ! Allocate solution
     call allocate_soln(soln, grid)
   
+  
     ! Initialize MMS solution
     call initialize_mms(grid, soln)
+    call apply_mms_boundary(grid,soln)
+    call compute_fluxes(grid,soln)
   
     ! Initialize initial residual norms
     call calc_time_step(grid, soln)
+
     call calc_residual(grid, soln)
     ! call residual_norms(soln%R, soln%rinit, one) ! Set initial norms
-    call residual_norms(soln%R, soln%rinit, Rnorm, grid)
+    call residual_norms(soln%R,Rnorm, soln%rinit, grid)
 
 
   
@@ -58,6 +65,9 @@ program main
 ! Main loop
     do iter = 1, max_iter
         call explicit_RK(grid, soln)
+        ! call apply_mms_boundary(grid, soln)
+          ! 2) reconstruct face‐values & compute fluxes on those faces
+        ! call compute_fluxes(grid, soln)
         call calc_time_step(grid, soln)
         call calc_residual(grid, soln)
         call residual_norms(soln%R, Rnorm, soln%rinit, grid)
