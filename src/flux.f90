@@ -5,6 +5,7 @@ module flux
     use set_constants
     use grid_type
     use soln_type
+    use variable_conversion
     implicit none
 
     procedure(calc_flux), pointer :: flux_fun
@@ -68,7 +69,7 @@ subroutine compute_lr_states(U, Lxi, Rxi, Leta, Reta,grid)
             V(4,i,j) = (gamma - one) * (U(4,i,j) - half * (U(2,i,j)**2 + U(3,i,j)**2) / U(1,i,j))  ! p
         end do
     end do
-    ! call limit_primitives(U, V)
+    ! call limit_primitives(V)
 
     ! Initialize limiter arrays
     psi_plus_xi = one
@@ -83,6 +84,11 @@ subroutine compute_lr_states(U, Lxi, Rxi, Leta, Reta,grid)
         ! call calculate_limiters(V, psi_plus_eta, psi_minus_eta, direction='eta')  ! η-direction
     end if
 
+    ! do j = grid%j_low, grid%j_high-1
+    !     Lxi(:,grid%i_low,j) = V(:,grid%i_low-1,j) + 0.5_prec * (V(:,grid%i_low,j) - V(:,grid%i_low-1,j))
+    !     Rxi(:,grid%i_low,j) = V(:,grid%i_low,j) - 0.5_prec * (V(:,grid%i_low+1,j) - V(:,grid%i_low,j))
+    ! end do
+
     ! xsi-direction extrapolation (faces at i_low:i_high)
     do j = grid%j_low, grid%j_high-1
         do i = grid%i_low, grid%i_high
@@ -95,7 +101,21 @@ subroutine compute_lr_states(U, Lxi, Rxi, Leta, Reta,grid)
         end do
     end do
 
+    ! Boundary at i=grid%i_high
+    ! do j = grid%j_low, grid%j_high-1
+    !     Lxi(:,grid%i_high,j) = V(:,grid%i_high-1,j) + 0.5_prec * (V(:,grid%i_high,j) - V(:,grid%i_high-1,j))
+    !     Rxi(:,grid%i_high,j) = V(:,grid%i_high,j) - 0.5_prec * (V(:,grid%i_high,j) - V(:,grid%i_high-1,j))
+    ! end do
+
     ! etadirection extrapolation (faces at j_low:j_high)
+
+    ! Boundary at j=grid%j_low
+    ! do i = grid%i_low, grid%i_high-1
+    !     Leta(:,i,grid%j_low) = V(:,i,grid%j_low-1) + 0.5_prec * (V(:,i,grid%j_low) - V(:,i,grid%j_low-1))
+    !     Reta(:,i,grid%j_low) = V(:,i,grid%j_low) - 0.5_prec * (V(:,i,grid%j_low+1) - V(:,i,grid%j_low))
+    ! end do
+
+    !interior
     do j = grid%j_low, grid%j_high
         do i = grid%i_low, grid%i_high-1
             Leta(:,i,j) = V(:,i,j-1) + fourth * epsilon * ( &
@@ -106,7 +126,68 @@ subroutine compute_lr_states(U, Lxi, Rxi, Leta, Reta,grid)
                 (one + kappa) * psi_minus_eta(:,i,j-1) * (V(:,i,j) - V(:,i,j-1)))
         end do
     end do
+
+    ! Boundary at j=grid%j_high
+    ! do i = grid%i_low, grid%i_high-1
+    !     Leta(:,i,grid%j_high) = V(:,i,grid%j_high-1) + 0.5_prec * (V(:,i,grid%j_high) - V(:,i,grid%j_high-1))
+    !     Reta(:,i,grid%j_high) = V(:,i,grid%j_high) - 0.5_prec * (V(:,i,grid%j_high) - V(:,i,grid%j_high-1))
+    ! end do
 end subroutine compute_lr_states
+! subroutine compute_fluxes(grid, soln)
+!     use set_precision, only: prec
+!     type(grid_t), intent(in)    :: grid
+!     type(soln_t), intent(inout) :: soln
+
+!     real(prec), dimension(neq,grid%i_low:grid%i_high,grid%j_low:grid%j_high-1) :: Lxi, Rxi
+!     real(prec), dimension(neq,grid%i_low:grid%i_high-1,grid%j_low:grid%j_high) :: Leta, Reta
+!     real(prec) :: nx, ny
+!     integer :: i, j
+
+!     ! Debug indices: print fluxes at this location
+!     integer, parameter :: debug_i = 5, debug_j = 5
+
+!     call select_flux()
+!     call compute_lr_states(soln%U, Lxi, Rxi, Leta, Reta, grid)
+
+!     ! ξ-direction fluxes
+!     do j = grid%j_low, grid%j_high-1
+!         do i = grid%i_low, grid%i_high
+!             nx = grid%n_xi(i,j,1)
+!             ny = grid%n_xi(i,j,2)
+
+!             call flux_fun(Lxi(:,i,j), Rxi(:,i,j), nx, ny, soln%Fxi(:,i,j))
+
+!             if (i == debug_i .and. j == debug_j) then
+!                 print *, '--- ξ-direction DEBUG ---'
+!                 print *, 'i, j       =', i, j
+!                 print *, 'Fxi        =', soln%Fxi(:,i,j)
+!                 print *, 'n_xi       =', nx, ny
+!                 print *, 'A_xi       =', grid%A_xi(i,j)
+!                 print *, '---------------------------'
+!             end if
+!         end do
+!     end do
+
+!     ! η-direction fluxes
+!     do j = grid%j_low, grid%j_high
+!         do i = grid%i_low, grid%i_high-1
+!             nx = grid%n_eta(i,j,1)
+!             ny = grid%n_eta(i,j,2)
+
+!             call flux_fun(Leta(:,i,j), Reta(:,i,j), nx, ny, soln%Feta(:,i,j))
+
+!             if (i == debug_i .and. j == debug_j) then
+!                 print *, '--- η-direction DEBUG ---'
+!                 print *, 'i, j       =', i, j
+!                 print *, 'Feta       =', soln%Feta(:,i,j)
+!                 print *, 'n_eta      =', nx, ny
+!                 print *, 'A_eta      =', grid%A_eta(i,j)
+!                 print *, '---------------------------'
+!             end if
+!         end do
+!     end do
+! end subroutine compute_fluxes
+
 
 subroutine compute_fluxes(grid, soln)
     type(grid_t), intent(in)    :: grid
@@ -127,6 +208,10 @@ subroutine compute_fluxes(grid, soln)
     ! call limit_primitives(soln%U, Rxi)
     ! call limit_primitives(soln%U, Leta)
     ! call limit_primitives(soln%U, Reta)
+    ! call limit_primitives(Lxi)
+    ! call limit_primitives( Rxi)
+    ! call limit_primitives( Leta)
+    ! call limit_primitives( Reta)
 
     ! Compute ξ-direction fluxes
     do j = grid%j_low, grid%j_high-1
@@ -147,32 +232,6 @@ subroutine compute_fluxes(grid, soln)
         end do
     end do
     end subroutine compute_fluxes
-
-! subroutine calculate_fluxes_normals(grid,soln)
-
-!     type(grid_t), intent(in)    :: grid
-!     type(soln_t), intent(inout) :: soln
-!     real(prec), dimension(neq,grid%i_low:grid%i_high,grid%j_low:grid%j_high) :: Lxi, Rxi
-!     real(prec), dimension(neq,grid%i_low:grid%i_high,grid%j_low:grid%j_high) :: Leta, Reta
-!     real(prec) :: nx, ny
-!     integer :: i,j,k
-
-!     do j = grid%j_low,grid%j_high-1
-!         do i = grid%i_low,grid%i_high
-!           nx = grid%n_xi(i,j,1)
-!           ny = grid%n_xi(i,j,2)
-!         end do
-!     end do
-
-!     do j = grid%j_low,grid%j_high
-!         do i = grid%i_low,grid%i_high-1
-!           nx = grid%n_eta(i,j,1)
-!           ny = grid%n_eta(i,j,2)
-!         end do
-!     end do
-
-
-! end subroutine calculate_fluxes_normals
 
 
 subroutine vanleer_flux(VL, VR,nx,ny,F)
@@ -239,6 +298,8 @@ subroutine vanleer_flux(VL, VR,nx,ny,F)
     ! Compute total enthalpy
     hL = (pL / rhoL) * (gamma / (gamma - 1.0_prec)) + 0.5_prec * (uL1**2+vL1**2)
     hR = (pR / rhoR) * (gamma / (gamma - 1.0_prec)) + 0.5_prec * (uR1**2+vR1**2)
+    ! hL = (aL**2) * (gamma / (gamma - 1.0_prec) + 0.5_prec * (uL1**2+vL1**2))
+    ! hR = (aR**2)/ (gamma - 1.0_prec) + 0.5_prec * (uR1**2+vR1**2)
   
     ! Pressure flux
     Fp(1) = 0.0_prec
@@ -248,8 +309,8 @@ subroutine vanleer_flux(VL, VR,nx,ny,F)
 
     ! Convective flux
     Fc(1) = (rhoL * aL * C_plus) + (rhoR * aR * C_minus)
-    Fc(2) = (rhoL * aL * C_plus * uL1) + (rhoR * aR * C_minus * uR1) + Fp(2)
-    Fc(3) = (rhoL * aL * C_plus * vL1) + (rhoR * aR * C_minus * vR1) + Fp(3)
+    Fc(2) = (rhoL * aL * C_plus * uL1) + (rhoR * aR * C_minus * uR1)
+    Fc(3) = (rhoL * aL * C_plus * vL1) + (rhoR * aR * C_minus * vR1)
     Fc(4) = (rhoL * aL * C_plus * hL) + (rhoR * aR * C_minus * hR)
   
     ! Total flux (in conservative form)

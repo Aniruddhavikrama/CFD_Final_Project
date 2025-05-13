@@ -12,7 +12,7 @@ module variable_conversion
     private
   
     public :: speed_of_sound, prim2cons, cons2prim
-    public :: update_states
+    public :: update_states,limit_primitives
 contains
 subroutine update_states(soln, grid)
     type(soln_t), intent(inout) :: soln

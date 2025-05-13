@@ -28,10 +28,10 @@ module soln_type
     ! real(prec), allocatable, dimension(:,:,:) :: DE ! discretization error
     real(prec), allocatable, dimension(:,:,:) :: Fxi  ! normal fluxes
     real(prec), allocatable, dimension(:,:,:) :: Feta ! normal fluxes
-    real(prec), allocatable, dimension(:,:,:) :: psi_p_xi  ! limiters
-    real(prec), allocatable, dimension(:,:,:) :: psi_p_eta  ! limiters
-    real(prec), allocatable, dimension(:,:,:) :: psi_m_xi  ! limiters
-    real(prec), allocatable, dimension(:,:,:) :: psi_m_eta  ! limiters
+    ! real(prec), allocatable, dimension(:,:,:) :: psi_p_xi  ! limiters
+    ! real(prec), allocatable, dimension(:,:,:) :: psi_p_eta  ! limiters
+    ! real(prec), allocatable, dimension(:,:,:) :: psi_m_xi  ! limiters
+    ! real(prec), allocatable, dimension(:,:,:) :: psi_m_eta  ! limiters
     real(prec), allocatable, dimension(:,:,:) :: Umms ! MMS conserved variables
     real(prec), allocatable, dimension(:,:,:) :: Vmms ! MMS primitive variables
     real(prec), allocatable, dimension(:,:,:) :: Smms ! MMS source terms
@@ -61,10 +61,10 @@ subroutine allocate_soln(soln,grid)
             soln%dt(   grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high ),   &
             soln%Fxi(  neq, grid%i_low:grid%i_high, grid%j_low:grid%j_high-1 ), &
             soln%Feta( neq, grid%i_low:grid%i_high-1, grid%j_low:grid%j_high ), &
-            soln%psi_p_xi(  neq, grid%i_low:grid%i_high,   grid%j_low:grid%j_high ), &
-            soln%psi_m_xi(  neq, grid%i_low:grid%i_high,   grid%j_low:grid%j_high), &
-            soln%psi_p_eta( neq, grid%i_low:grid%i_high,   grid%j_low:grid%j_high ), &
-            soln%psi_m_eta( neq, grid%i_low:grid%i_high,   grid%j_low:grid%j_high ) , &
+            ! soln%psi_p_xi(  neq, grid%i_low:grid%i_high,   grid%j_low:grid%j_high ), &
+            ! soln%psi_m_xi(  neq, grid%i_low:grid%i_high,   grid%j_low:grid%j_high), &
+            ! soln%psi_p_eta( neq, grid%i_low:grid%i_high,   grid%j_low:grid%j_high ), &
+            ! soln%psi_m_eta( neq, grid%i_low:grid%i_high,   grid%j_low:grid%j_high ) , &
             soln%rinit( neq ) ,&
             soln%rnorm(neq) ,&
             soln%Vmms( neq, grid%ig_low:grid%ig_high,  grid%jg_low:grid%jg_high ),&
@@ -76,7 +76,7 @@ subroutine allocate_soln(soln,grid)
             soln%U     = zero
             soln%Fxi   = zero
             soln%Feta  = zero
-            ! soln%S     = zero
+            soln%S     = zero
             soln%V     = zero
             soln%R     = one
             soln%asnd  = one

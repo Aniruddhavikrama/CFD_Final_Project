@@ -83,56 +83,63 @@ module time_module
     end subroutine calc_time_step
     
     
-      subroutine explicit_RK(grid, soln)
-        type(grid_t), intent(inout) :: grid
-        type(soln_t), intent(inout) :: soln
-        real(prec), dimension(4) :: k
-        integer :: i, j
-    
-        k = (/ fourth, third, half, one /)
-        do j = 1, 4
-          ! Apply MMS Dirichlet boundary conditions
-          call apply_mms_boundary(grid, soln)
+    subroutine explicit_RK(grid, soln)
+      type(grid_t), intent(inout) :: grid
+      type(soln_t), intent(inout) :: soln
+      real(prec), dimension(4) :: k
+      integer :: i, j
+  
+      k = (/ fourth, third, half, one /)
+      do j = 1, 4
+        ! Apply MMS Dirichlet boundary conditions
+        call apply_mms_boundary(grid, soln)
 
-          call update_states(soln, grid)
-          ! Set source term for MMS
-          call evaluate_mms_source(grid,soln)
-          soln%S = soln%Smms
-          ! Convert primitive to conserved variables
-          call prim2cons(soln%U, soln%V)
-          ! Compute fluxes
-          call compute_fluxes(grid, soln)
+        call update_states(soln, grid)
+        ! Set source term for MMS
+        call evaluate_mms_source(grid,soln)
+        soln%S = soln%Smms
+        ! Convert primitive to conserved variables
+        call prim2cons(soln%U, soln%V)
+        ! Compute fluxes
+        call compute_fluxes(grid, soln)
 
-          ! Compute residual
-          call calc_residual(grid, soln)
-          ! Update conserved variables
-          do i = 1, neq
-            soln%U(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) = &
-                 soln%U(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) - &
-               k(j) * (soln%R(i,  grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) * &
-                       soln%dt( grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)) / &
-               grid%V( grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)
-          end do
-          ! Update primitive variables
-          call update_states(soln,grid)
+        ! Compute residual
+        call calc_residual(grid, soln)
+        ! Update conserved variables
+        do i = 1, neq
+          soln%U(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) = &
+                soln%U(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) - &
+              k(j) * (soln%R(i,  grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) * &
+                      soln%dt( grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)) / &
+              grid%V( grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)
         end do
-      end subroutine explicit_RK
-    
-      subroutine calc_residual(grid, soln)
-        type(grid_t), intent(in) :: grid
-        type(soln_t), intent(inout) :: soln
-        integer :: i, j
-        ! do j = grid%j_cell_low, grid%j_cell_high
-        !     do i = grid%i_cell_low, grid%i_cell_high
-        !         soln%R(:, i, j) = grid%A_xi(i+1, j) * soln%Fxi(:, i+1, j) - grid%A_xi(i, j) * soln%Fxi(:, i, j) &
-        !                           + grid%A_eta(i, j+1) * soln%Feta(:, i, j+1) - grid%A_eta(i, j) * soln%Feta(:, i, j)- grid%V(i, j) * soln%S(:, i, j) 
-        !     end do
-        ! end do
-        
+        ! Update primitive variables
+        call update_states(soln,grid)
+      end do
+    end subroutine explicit_RK
+  
+    subroutine calc_residual(grid, soln)
+      type(grid_t), intent(in) :: grid
+      type(soln_t), intent(inout) :: soln
+      integer :: i, j
+      ! do j = grid%j_cell_low, grid%j_cell_high
+      !     do i = grid%i_cell_low, grid%i_cell_high
+      !         soln%R(:, i, j) = grid%A_xi(i+1, j) * soln%Fxi(:, i+1, j) - grid%A_xi(i, j) * soln%Fxi(:, i, j) &
+      !                           + grid%A_eta(i, j+1) * soln%Feta(:, i, j+1) - grid%A_eta(i, j) * soln%Feta(:, i, j)- grid%V(i, j) * soln%S(:, i, j) 
+      !     end do
+      ! end do
 !!separate
-        do j = grid%j_low,grid%j_high-1
-            do i = grid%i_low,grid%i_high-1
-                soln%R(:, i, j) = - grid%V(i, j) * soln%S(:, i, j);
+      ! do j = grid%j_cell_low, grid%j_cell_high
+      !     do i = grid%i_cell_low, grid%i_cell_high
+      !         soln%R(:, i, j) = -(grid%A_xi(i+1, j) * soln%Fxi(:, i+1, j) - grid%A_xi(i, j) * soln%Fxi(:, i, j) &
+      !                           + grid%A_eta(i, j+1) * soln%Feta(:, i, j+1) - grid%A_eta(i, j) * soln%Feta(:, i, j))- grid%V(i, j) * soln%S(:, i, j) 
+      !     end do
+      ! end do
+      
+!!separate
+        do j = grid%j_cell_low, grid%j_cell_high
+            do i = grid%i_cell_low, grid%i_cell_high
+                soln%R(:, i, j) = - grid%V(i, j) * soln%S(:, i, j)
             end do
         end do
 
@@ -152,34 +159,34 @@ module time_module
             end do
         end do
 
-        !!!seperate
+      !!!seperate
 
-        
-        ! do j = grid%j_low,grid%j_high
-        !   do i = grid%i_low,grid%i_high
-        !     soln%R(:, i, j) = soln%R(:, i, j) &
-        !                     + grid%A_xi(i+1, j) * soln%Fxi(:, i+1, j) &
-        !                     - grid%A_xi(i, j) * soln%Fxi(:, i, j) &
-        !                     + grid%A_eta(i, j+1) * soln%Feta(:, i, j) &
-        !                     - grid%A_eta(i, j) * soln%Feta(:, i, j-1) &
-        !                     - grid%V(i, j) * soln%S(:, i, j)
-        !   end do
-        ! end do
-      end subroutine calc_residual
-    
-      subroutine residual_norms(R, rnorm, rinit,grid)
-        type(grid_t),intent(in) :: grid
-        real(prec), dimension(neq, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high), intent(in) :: R
-        real(prec), dimension(neq), intent(in)  :: rinit
-        real(prec), dimension(neq), intent(out) :: rnorm
-        real(prec) :: Linv
-        integer :: i
-    
-        Linv = one / real(size(R(1,:,:)), prec)
-        do i = 1, neq
-          Rnorm(i) = sqrt(Linv * sum(R(i,:,:)**2))
-        end do
-        Rnorm = Rnorm / rinit
-      end subroutine residual_norms
+      
+      ! do j = grid%j_low,grid%j_high
+      !   do i = grid%i_low,grid%i_high
+      !     soln%R(:, i, j) = soln%R(:, i, j) &
+      !                     + grid%A_xi(i+1, j) * soln%Fxi(:, i+1, j) &
+      !                     - grid%A_xi(i, j) * soln%Fxi(:, i, j) &
+      !                     + grid%A_eta(i, j+1) * soln%Feta(:, i, j) &
+      !                     - grid%A_eta(i, j) * soln%Feta(:, i, j-1) &
+      !                     - grid%V(i, j) * soln%S(:, i, j)
+      !   end do
+      ! end do
+    end subroutine calc_residual
+  
+    subroutine residual_norms(R, rnorm, rinit,grid)
+      type(grid_t),intent(in) :: grid
+      real(prec), dimension(neq, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high), intent(in) :: R
+      real(prec), dimension(neq), intent(in)  :: rinit
+      real(prec), dimension(neq), intent(out) :: rnorm
+      real(prec) :: Linv
+      integer :: i
+  
+      Linv = one / real(size(R(1,:,:)), prec)
+      do i = 1, neq
+        Rnorm(i) = sqrt(Linv * sum(R(i,:,:)**2))
+      end do
+      Rnorm = Rnorm / rinit
+    end subroutine residual_norms
   
 end module time_module    

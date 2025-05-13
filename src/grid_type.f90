@@ -211,6 +211,7 @@ subroutine cell_geometry(grid)
             ! grid%n_eta(i,j,1) = -grid%n_eta(i,j,1) / grid%A_eta(i,j)
             ! grid%n_eta(i,j,2) =  grid%n_eta(i,j,2) / grid%A_eta(i,j)
             grid%n_eta(i,j,:) =  -grid%n_eta(i,j,:) / grid%A_eta(i,j)
+            ! grid%n_eta(i,j,:) =  grid%n_eta(i,j,:) / grid%A_eta(i,j)
         end do        
     end do
 

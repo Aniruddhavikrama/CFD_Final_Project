@@ -21,7 +21,7 @@ program main
     ! real(prec), parameter :: CFL = 0.5_prec ! Example CFL number, adjust in set_inputs if needed
   
     ! Set maximum iterations for MMS convergence
-    max_iter = 10000 ! Adjust as needed for convergence
+    max_iter = 100000 ! Adjust as needed for convergence
   
     ! Initialize constants and inputs
     call set_derived_constants
@@ -46,6 +46,7 @@ program main
     ! Initialize MMS solution
     call initialize_mms(grid, soln)
     call apply_mms_boundary(grid,soln)
+    call update_states   (soln, grid)
     call compute_fluxes(grid,soln)
   
     ! Initialize initial residual norms
