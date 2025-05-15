@@ -36,7 +36,7 @@ contains
         end do
 
         !— Convert to conservative variables 
-        call prim2cons(soln%U, soln%V)
+        ! call prim2cons(soln%U, soln%V)
 
     end subroutine initialize_mms
 

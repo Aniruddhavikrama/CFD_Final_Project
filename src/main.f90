@@ -8,7 +8,9 @@ program main
     use mms_boundary
     use soln_type
     use flux
-    use time_module, only : explicit_RK, calc_residual, residual_norms, calc_time_step
+    use time_module, only : explicit_RK, calc_residual, residual_norms, calc_time_step,evaluate_mms_source
+    use variable_conversion
+    use limiters
   
     implicit none
   
@@ -43,16 +45,23 @@ program main
     call allocate_soln(soln, grid)
   
   
-    ! Initialize MMS solution
-    call initialize_mms(grid, soln)
-    call apply_mms_boundary(grid,soln)
-    call update_states   (soln, grid)
-    call compute_fluxes(grid,soln)
-  
-    ! Initialize initial residual norms
-    call calc_time_step(grid, soln)
+    ! Initialize MMS solutions
+    call init_limiters(grid)
 
-    call calc_residual(grid, soln)
+    call initialize_mms(grid, soln) ! Sets soln%V to MMS, then soln%U from soln%V
+    call apply_mms_boundary(grid,soln) ! Extrapolates soln%V to ghost, updates soln%U in ghost
+    call update_states   (soln, grid) ! Syncs U,V, limits V, updates U, calc asnd
+
+    ! Calculate MMS source terms for the initial residual calculation
+    call evaluate_mms_source(grid, soln) ! Calculates soln%Smms
+    soln%S = soln%Smms                   ! Assign Smms to S
+
+    ! Calculate fluxes based on the initial state
+    call compute_fluxes(grid,soln)    ! Calculates soln%Fxi, soln%Feta
+  
+    ! Calculate initial residual for normalization
+    call calc_time_step(grid, soln) ! Calculates soln%dt
+    call calc_residual(grid, soln)    ! Calculates soln%R using current S, Fxi, Feta
     ! call residual_norms(soln%R, soln%rinit, one) ! Set initial norms
     call residual_norms(soln%R,Rnorm, soln%rinit, grid)
 

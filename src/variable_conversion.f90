@@ -20,7 +20,7 @@ subroutine update_states(soln, grid)
     integer :: i, j
 
     call cons2prim(soln%U, soln%V)
-    call limit_primitives(soln%V)
+    ! call limit_primitives(soln%V)
     call prim2cons(soln%U, soln%V)
 
     do j = grid%j_cell_low, grid%j_cell_high

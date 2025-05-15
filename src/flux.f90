@@ -6,6 +6,7 @@ module flux
     use grid_type
     use soln_type
     use variable_conversion
+    use limiters
     implicit none
 
     procedure(calc_flux), pointer :: flux_fun
@@ -79,9 +80,9 @@ subroutine compute_lr_states(U, Lxi, Rxi, Leta, Reta,grid)
 
     ! Compute limiters for second-order
     if (order == 2) then
-        ! call select_limiter(limiter_scheme)
-        ! call calculate_limiters(V, psi_plus_xi, psi_minus_xi)  ! ξ-direction
-        ! call calculate_limiters(V, psi_plus_eta, psi_minus_eta, direction='eta')  ! η-direction
+        call select_limiter(limiter_scheme)
+        call calculate_limiters(grid, V, psi_plus_xi, psi_minus_xi)
+        call calculate_limiters(grid, V, psi_plus_eta, psi_minus_eta, direction='eta') 
     end if
 
     ! do j = grid%j_low, grid%j_high-1
@@ -273,8 +274,8 @@ subroutine vanleer_flux(VL, VR,nx,ny,F)
     MR = unR/aR
   
     ! Split Mach numbers
-    m_plus  = (ML + 1.0_prec)**2 / 4.0_prec
-    m_minus = -(MR - 1.0_prec)**2 / 4.0_prec
+    m_plus  = ((ML + 1.0_prec)**2 )/ 4.0_prec
+    m_minus = (-(MR - 1.0_prec)**2) / 4.0_prec
   
     ! Flow direction sensor
     alpha_plus  = (1.0_prec + sign(1.0_prec, ML)) / 2.0_prec
@@ -285,8 +286,8 @@ subroutine vanleer_flux(VL, VR,nx,ny,F)
     beta_minus = -real(max(0, 1 - int(abs(MR))), prec)
   
     ! Convective flux coefficients
-    C_plus  = alpha_plus * (1.0_prec + beta_plus) * ML - beta_plus * m_plus
-    C_minus = alpha_minus * (1.0_prec + beta_minus) * MR - beta_minus * m_minus
+    C_plus  = (alpha_plus * (1.0_prec + beta_plus) * ML) - beta_plus * m_plus
+    C_minus = (alpha_minus * (1.0_prec + beta_minus) * MR) - beta_minus * m_minus
   
     ! Pressure flux coefficients
     p_plus  = m_plus * (-ML + 2.0_prec)

@@ -36,9 +36,11 @@ module set_inputs
   integer :: neq            = 4
   integer :: n_ghost        = 2
   integer :: cartesian_grid_flag = 0  ! Switch: 1 for Cartesian, 0 for curvilinear from file
-  integer,public :: order =1
+  integer,public :: order =2
   integer,public :: flux_scheme =1
   integer,public :: residual_out_freq= 1
+  integer,public :: limiter_scheme = 2  ! 0: none, 1: Van Leer, 2: Minmod
+  integer,public :: freeze_limiter_iter = 1 ! Freeze limiters after this iteration
 
 
 
@@ -46,7 +48,7 @@ module set_inputs
   real(prec) :: xmax       = one
   real(prec) :: ymin       = zero
   real(prec) :: ymax       = one
-  real(prec) :: CFL =       0.0001_prec
+  real(prec) :: CFL =       0.10_prec
   real(prec) :: Lmms     = 1.0_prec
   real(prec) :: kappa   = -1.0_prec !!!MUSCL Scheme
    
