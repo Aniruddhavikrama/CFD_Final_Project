@@ -318,76 +318,77 @@ subroutine vanleer_flux(VL, VR,nx,ny,F)
     F = Fc + Fp
   end subroutine vanleer_flux
 
-  subroutine roe_flux(VL, VR,nx,ny,F)
-    real(prec), dimension(neq), intent(in) :: VL, VR  ! Primitive variables: [rho, u, p]
+ subroutine roe_flux(VL, VR, nx, ny, F)
+    real(prec), dimension(neq), intent(in) :: VL, VR  ! Primitive variables: [rho, u, v, p]
     real(prec), dimension(neq), intent(out) :: F
-    real(prec),intent(in):: nx, ny
-    real(prec) :: rhoL, uL1, pL, aL, hL, rhoR, uR1, pR, aR, hR,vL1,vR1
-    real(prec) :: rho_avg, u_avg, h_avg, a_avg, Ri,unL,unR,v_avg
-    real(prec), dimension(neq) :: FL, FR, rvec1, rvec2, rvec3, lambda,rvec4
-    real(prec) :: dw1, dw2, dw3,epsilon1,dw4
+    real(prec), intent(in) :: nx, ny
+    real(prec) :: rhoL, uL1, pL, aL, hL, rhoR, uR1, pR, aR, hR, vL1, vR1
+    real(prec) :: rho_avg, u_avg, h_avg, a_avg, Ri, unL, unR, v_avg, un_avg
+    real(prec), dimension(neq) :: FL, FR, rvec1, rvec2, rvec3, rvec4, lambda
+    real(prec) :: dw1, dw2, dw3, dw4, epsilon1
     integer :: i
   
     ! Extract primitive variables from VL (left state)
     rhoL = VL(1)  ! Density
-    uL1  = VL(2)  ! Velocity
-    vL1  = VL(3)  ! Velocity
+    uL1  = VL(2)  ! x-velocity
+    vL1  = VL(3)  ! y-velocity
     pL   = VL(4)  ! Pressure
     aL   = sqrt(gamma * pL / rhoL)  ! Speed of sound
-    ! hL   = aL**2 / (gamma - one) + half * uL1**2  ! Total enthalpy
+    hL   = aL**2 / (gamma - one) + half * (uL1**2 + vL1**2)  ! Total enthalpy
   
     ! Extract primitive variables from VR (right state)
     rhoR = VR(1)  ! Density
-    uR1  = VR(2)  ! Velocity
-    vR1  = VR(3)  ! Velocity
+    uR1  = VR(2)  ! x-velocity
+    vR1  = VR(3)  ! y-velocity
     pR   = VR(4)  ! Pressure
     aR   = sqrt(gamma * pR / rhoR)  ! Speed of sound
-
-    unL= uL1*nx+vL1*ny
-    unR = uR1*nx+vR1*ny
-    ! hR   = aR**2 / (gamma - one) + half * uR1**2  ! Total enthalpy
-    hL = (pL / rhoL) * (gamma / (gamma - 1.0_prec)) + 0.5_prec * ((uL1**2)+(vL1**2))
-    hR = (pR / rhoR) * (gamma / (gamma - 1.0_prec)) + 0.5_prec * ((uR1**2)+(vR1**2))
+    hR   = aR**2 / (gamma - one) + half * (uR1**2 + vR1**2)  ! Total enthalpy
+    
+    ! Calculate normal velocities
+    unL = uL1*nx + vL1*ny
+    unR = uR1*nx + vR1*ny
   
     ! Compute Roe averages
     Ri = sqrt(rhoR / rhoL)
     rho_avg = Ri * rhoL
-    u_avg   = (Ri * uR1 + uL1) / (Ri+ one)
-    v_avg   = (Ri*vR1+vL1)/(Ri+one)
-    h_avg   = (Ri * hR + hL) / (Ri + one)
-    a_avg   = sqrt((gamma - one) * (h_avg - half*(u_avg**2+v_avg**2)))
+    u_avg = (uL1 + Ri * uR1) / (one + Ri)
+    v_avg = (vL1 + Ri * vR1) / (one + Ri)
+    h_avg = (hL + Ri * hR) / (one + Ri)
+    a_avg = sqrt((gamma - one) * (h_avg - half * (u_avg**2 + v_avg**2)))
+    un_avg = u_avg*nx + v_avg*ny
   
     ! Define right eigenvectors
-    rvec1 = [one, u_avg, half * u_avg**2]  ! Acoustic wave (u)
-    rvec2 = (half*(rho_avg/a_avg)*([one, u_avg + a_avg, h_avg + u_avg * a_avg]))  ! Right-moving wave (u + a)
-    rvec3 = (half*(-rho_avg/a_avg)*([one, u_avg - a_avg, h_avg - u_avg * a_avg]))  ! Left-moving wave (u - a)
-
-    lambda = [(u_avg), (u_avg + a_avg), (u_avg - a_avg)]
+    rvec1 = [one, u_avg, v_avg, half*(u_avg**2 + v_avg**2)]
+    rvec2 = [zero, ny*rho_avg, -nx*rho_avg, rho_avg*(ny*u_avg - nx*v_avg)]
+    rvec3 = half*(rho_avg/a_avg)*[one, u_avg + nx*a_avg, v_avg + ny*a_avg, h_avg + un_avg*a_avg]
+    rvec4 = -half*(rho_avg/a_avg)*[one, u_avg - nx*a_avg, v_avg - ny*a_avg, h_avg - un_avg*a_avg]
     
-    ! lambda_old = lambda
+    ! Define eigenvalues
+    lambda = [un_avg, un_avg, un_avg + a_avg, un_avg - a_avg]
     
-    epsilon1 = 0.05_prec  ! Typically 0.1 or smaller
-    do i = 1, 3
-      if (abs(lambda(i)) < 2.0_prec * epsilon1 * a_avg) then
-        lambda(i) = (abs(lambda(i)**2)) / ((4.0_prec * epsilon1 * a_avg) + epsilon1 * a_avg)
+    ! Apply entropy fix
+    epsilon1 = 0.01_prec  ! Typically 0.1 or smaller
+    do i = 1, 4
+      lambda(i) = abs(lambda(i))
+      if (lambda(i) < 2.0_prec * epsilon1 * a_avg) then
+        lambda(i) = half * (lambda(i)**2 / (epsilon1 * a_avg) + epsilon1 * a_avg)
       end if
     end do
   
     ! Wave strengths (differences in primitive variables)
-    dw1 = (rhoR - rhoL) - ((pR - pL) / a_avg**2)  ! Entropy wave
-    dw2 = (uR1 - uL1)+(pR - pL) / (rho_avg * a_avg)   ! Right-moving acoustic wave
-    dw3 = (uR1 - uL1)-((pR - pL) / (rho_avg * a_avg))  ! Left-moving acoustic wave
+    dw1 = (rhoR - rhoL) - (pR - pL) / a_avg**2                  ! Entropy wave
+    dw2 = ny*(uR1 - uL1) - nx*(vR1 - vL1)                       ! Shear wave
+    dw3 = nx*(uR1 - uL1) + ny*(vR1 - vL1) + (pR - pL)/(rho_avg*a_avg)  ! Right acoustic wave
+    dw4 = nx*(uR1 - uL1) + ny*(vR1 - vL1) - (pR - pL)/(rho_avg*a_avg)  ! Left acoustic wave
   
-    ! Compute fluxes in conservative form from primitive variables
-    FL = [rhoL * uL1, rhoL * uL1**2 + pL, rhoL * hL * uL1]  ! Left flux
-    FR = [rhoR * uR1, rhoR * uR1**2 + pR, rhoR * hR * uR1]  ! Right flux
-
+    ! Compute physical fluxes
+    FL = [rhoL*unL, rhoL*uL1*unL + pL*nx, rhoL*vL1*unL + pL*ny, rhoL*hL*unL]
+    FR = [rhoR*unR, rhoR*uR1*unR + pR*nx, rhoR*vR1*unR + pR*ny, rhoR*hR*unR]
   
     ! Roe flux: average flux minus dissipation term
-    F = half * (FL + FR) - (half *abs(lambda(1)) * dw1 * rvec1 + &
-                                   abs(lambda(2)) * dw2 * rvec2 + &
-                                   abs(lambda(3)) * dw3 * rvec3)
+    F = half * (FL + FR) - half * (lambda(1)*dw1*rvec1 + lambda(2)*dw2*rvec2 + &
+                                   lambda(3)*dw3*rvec3 + lambda(4)*dw4*rvec4)
     
-  end subroutine roe_flux
+end subroutine roe_flux
     
 end module flux

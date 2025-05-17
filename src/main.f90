@@ -18,7 +18,7 @@ program main
     type(grid_t) :: grid
     type(soln_t) :: soln
     integer ::  iter, max_iter
-    character(*), parameter :: grid_file = 'curv2d257_edited.x'
+    character(*), parameter :: grid_file = 'curv2d33_edited.x'
     integer :: ierr
     real(prec), dimension(4) :: Rnorm
     ! real(prec), parameter :: CFL = 0.5_prec  adjust in set_inputs if needed
@@ -89,7 +89,7 @@ program main
             write(*, '(I8, 4ES14.6)') iter, Rnorm(1), Rnorm(2), Rnorm(3), Rnorm(4)
         end if
     
-        if (maxval(Rnorm) < 1.0e-10_prec) then
+        if (maxval(Rnorm) < 1.0e-8_prec) then
             write(*, '(A, I8)') 'Converged at iteration ', iter
             call write_solution_tecplot(grid, soln, 'converged_solution.dat')
             call compute_discretization_error(grid, soln)
