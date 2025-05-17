@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build_release/cmake_install.cmake",
+		"/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build_release/src/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
