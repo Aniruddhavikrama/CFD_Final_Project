@@ -83,90 +83,170 @@ module time_module
     end subroutine calc_time_step
     
     
-    subroutine explicit_RK(grid, soln)
-  use set_constants, only: fourth, third, half, one
-  use set_inputs, only: neq
-  type(grid_t), intent(inout) :: grid
-  type(soln_t), intent(inout) :: soln
+!   subroutine explicit_RK(grid, soln)
+!   use set_constants, only: fourth, third, half, one
+!   use set_inputs, only: neq
+!   type(grid_t), intent(inout) :: grid
+!   type(soln_t), intent(inout) :: soln
 
-  real(prec), dimension(4) :: k
-  integer :: i, j
-  real(prec), allocatable :: U_old(:,:,:)
+!   real(prec), dimension(4) :: k
+!   integer :: i, j
+!   real(prec), allocatable :: U_old(:,:,:)
 
-  k = (/ fourth, third, half, one /)
+!   k = (/ fourth, third, half, one /)
 
-  ! Backup U before starting RK
-  allocate(U_old(neq, grid%ig_low:grid%ig_high, grid%jg_low:grid%jg_high))
-  U_old = soln%U
+!   ! Backup U before starting RK
+!   allocate(U_old(neq, grid%ig_low:grid%ig_high, grid%jg_low:grid%jg_high))
+!   U_old = soln%U
 
-  do j = 1, 4
-    ! Apply boundary conditions
-    call apply_mms_boundary(grid, soln)
+!   do j = 1, 4
+!     ! Apply boundary conditions
+!     call apply_mms_boundary(grid, soln)
 
-    ! Set source terms
-    call evaluate_mms_source(grid, soln)
-    soln%S = soln%Smms
+!     ! Set source terms
+!     call evaluate_mms_source(grid, soln)
+!     soln%S = soln%Smms
 
-    ! Convert primitive to conserved (redundant?)
-    call prim2cons(soln%U, soln%V)
+!     ! Convert primitive to conserved (redundant?)
+!     call prim2cons(soln%U, soln%V)
 
-    ! Compute fluxes
-    call compute_fluxes(grid, soln)
+!     ! Compute fluxes
+!     call compute_fluxes(grid, soln)
 
-    ! Compute residual
-    call calc_residual(grid, soln)
+!     ! Compute residual
+!     call calc_residual(grid, soln)
 
-    ! RK update using original U_old
-    do i = 1, neq
-      soln%U(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) = &
-        U_old(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) - &
-        k(j) * (soln%R(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) * &
-        soln%dt(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)) / &
-        grid%V(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)
-    end do
+!     ! RK update using original U_old
+!     do i = 1, neq
+!       soln%U(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) = &
+!         U_old(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) - &
+!         k(j) * (soln%R(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) * &
+!         soln%dt(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)) / &
+!         grid%V(grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)
+!     end do
 
-    ! Update primitive variables
-    call update_states(soln, grid)
-  end do
+!     ! Update primitive variables
+!     call update_states(soln, grid)
+!   end do
 
-  deallocate(U_old)
-end subroutine explicit_RK
+!   deallocate(U_old)
+! end subroutine explicit_RK
 
 
+
+!blows up way later
 ! subroutine explicit_RK(grid, soln)
-!       type(grid_t), intent(inout) :: grid
-!       type(soln_t), intent(inout) :: soln
-!       real(prec), dimension(4) :: k
-!       integer :: i, j
-  
-!       k = (/ fourth, third, half, one /)
-!       do j = 1, 4
-!         ! Apply MMS Dirichlet boundary conditions
-!         call apply_mms_boundary(grid, soln)
+!     type(grid_t), intent(inout)    :: grid
+!     type(soln_t), intent(inout)    :: soln
+!     real(prec), dimension(4)       :: a, b
+!     real(prec), allocatable        :: U0(:,:,:), U1(:,:,:), U2(:,:,:), U3(:,:,:)
+!     integer :: i, j, k, stage
 
-!         ! call update_states(soln, grid)
-!         ! Set source term for MMS
-!         call evaluate_mms_source(grid,soln)
-!         soln%S = soln%Smms
-!         ! Convert primitive to conserved variables
-!         call prim2cons(soln%U, soln%V)
-!         ! Compute fluxes
-!         call compute_fluxes(grid, soln)
+!     ! RK4 coefficients: a = [1/6, 1/3, 1/3, 1/6], b = [0, 1/2, 1/2, 1]
+!     a = (/ one/6.0_prec, one/3.0_prec, one/3.0_prec, one/6.0_prec /)
+!     b = (/ 0.0_prec,      half,           half,           one          /)
 
-!         ! Compute residual
-!         call calc_residual(grid, soln)
-!         ! Update conserved variables
+!     ! Backup original solution U0
+!     allocate(U0(neq, grid%ig_low:grid%ig_high, grid%jg_low:grid%jg_high))
+!     U0 = soln%U
+
+!     ! Initialize stage arrays with same shape as U0
+!     allocate(U1, mold=U0)
+!     allocate(U2, mold=U0)
+!     allocate(U3, mold=U0)
+
+!     do stage = 1, 4
+!       ! Restore base or previous stage as starting U
+!       select case(stage)
+!       case(1)
+!         soln%U = U0
+!       case(2)
+!         soln%U = U1
+!       case(3)
+!         soln%U = U2
+!       case default
+!         soln%U = U3
+!       end select
+
+!       ! Apply BC, source, flux, residual, timestep
+!       call apply_mms_boundary(grid, soln)
+!       call evaluate_mms_source(grid, soln)
+!       soln%S = soln%Smms
+!       call prim2cons(soln%U, soln%V)
+!       call compute_fluxes(grid, soln)
+!       call calc_residual(grid, soln)
+!       call calc_time_step(grid, soln)
+
+!       ! Compute stage increments explicitly
+!       if (stage < 4) then
 !         do i = 1, neq
-!           soln%U(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) = &
-!                 soln%U(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) - &
-!               k(j) * (soln%R(i,  grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) * &
-!                       soln%dt( grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)) / &
-!               grid%V( grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)
+!           do j = grid%i_cell_low, grid%i_cell_high
+!             do k = grid%j_cell_low, grid%j_cell_high
+!               select case(stage)
+!               case(1)
+!                 U1(i,j,k) = U0(i,j,k) - b(stage)*soln%dt(j,k)*soln%R(i,j,k)/grid%V(j,k)
+!               case(2)
+!                 U2(i,j,k) = U0(i,j,k) - b(stage)*soln%dt(j,k)*soln%R(i,j,k)/grid%V(j,k)
+!               case(3)
+!                 U3(i,j,k) = U0(i,j,k) - b(stage)*soln%dt(j,k)*soln%R(i,j,k)/grid%V(j,k)
+!               end select
+!             end do
+!           end do
 !         end do
-!         ! Update primitive variables
-!         call update_states(soln,grid)
-!       end do
-!     end subroutine explicit_RK
+!       else
+!         ! Final combination stage
+!         do i = 1, neq
+!           do j = grid%i_cell_low, grid%i_cell_high
+!             do k = grid%j_cell_low, grid%j_cell_high
+!               soln%U(i,j,k) = a(1)*U0(i,j,k) + a(2)*U1(i,j,k) + a(3)*U2(i,j,k) + a(4)*(U0(i,j,k) - b(stage)*soln%dt(j,k)*soln%R(i,j,k)/grid%V(j,k))
+!             end do
+!           end do
+!         end do
+!       end if
+!     end do
+
+!     ! Update primitive variables from final U
+!     call update_states(soln, grid)
+
+!     ! Deallocate stage arrays
+!     deallocate(U0, U1, U2, U3)
+!   end subroutine explicit_RK
+
+
+subroutine explicit_RK(grid, soln)
+      type(grid_t), intent(inout) :: grid
+      type(soln_t), intent(inout) :: soln
+      real(prec), dimension(4) :: k
+      integer :: i, j
+  
+      k = (/ fourth, third, half, one /)
+      do j = 1, 4
+        ! Apply MMS Dirichlet boundary conditions
+        ! call apply_mms_boundary(grid, soln)
+
+        call update_states(soln, grid)
+        ! Set source term for MMS
+        call evaluate_mms_source(grid,soln)
+        soln%S = soln%Smms
+        ! Convert primitive to conserved variables
+        call prim2cons(soln%U, soln%V)
+        ! Compute fluxes
+        call compute_fluxes(grid, soln)
+
+        ! Compute residual
+        call calc_residual(grid, soln)
+        ! Update conserved variables
+        do i = 1, neq
+          soln%U(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) = &
+                soln%U(i, grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) - &
+              k(j) * (soln%R(i,  grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high) * &
+                      soln%dt( grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)) / &
+              grid%V( grid%i_cell_low:grid%i_cell_high, grid%j_cell_low:grid%j_cell_high)
+        end do
+        ! Update primitive variables
+        call update_states(soln,grid)
+      end do
+    end subroutine explicit_RK
   
 
     subroutine calc_residual(grid, soln)

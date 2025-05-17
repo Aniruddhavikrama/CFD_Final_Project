@@ -33,7 +33,7 @@ set(CMAKE_GCC_FLAGS "" )
 
 set(
   GCC_USER_DEBUG_FLAGS
-  "-g -Wall -Wextra -fimplicit-none -fcheck=all -ffpe-trap=zero,underflow,overflow,invalid --coverage -fbacktrace -fstack-protector-all -fstack-check -Wimplicit-procedure -fsanitize=address,undefined -fbounds-check"
+  "-Og -Wall -Wextra -fimplicit-none -fcheck=all -ffpe-trap=zero,underflow,overflow,invalid --coverage -fbacktrace -fstack-protector-all -fstack-check -Wimplicit-procedure -fsanitize=address,undefined -fbounds-check"
 )
 
 # Custom release build flags

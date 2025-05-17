@@ -3,11 +3,12 @@ module geometry
   use set_inputs
   use grid_type
   use soln_type
+  use Init
   
   implicit none
   private
 
-  public :: cartesian_grid,write_tecplot_file,read_grid,write_solution_dat
+  public :: cartesian_grid,write_tecplot_file,read_grid,write_solution_dat,write_solution_tecplot,compute_discretization_error
   
 contains
 
@@ -338,6 +339,91 @@ subroutine write_tecplot_file(grid, filename)
 
     close(io_unit)
   end subroutine write_solution_dat
+
+  !-------------------------------------------------------------------
+! Write converged solution to Tecplot (cell‐centered),  primitives & conserved
+!-------------------------------------------------------------------
+subroutine write_solution_tecplot(grid, soln, filename)
+  use set_precision, only: prec
+  use set_constants,  only: zero
+  use set_inputs,     only: neq
+  type(grid_t),       intent(in)  :: grid
+  type(soln_t),       intent(in)  :: soln
+  character(len=*),   intent(in)  :: filename
+  integer             :: i,j,unit
+
+  open(newunit=unit, file=trim(filename), status='replace', action='write')
+
+  write(unit,'(A)') 'TITLE = "Converged Solution: Primitive & Conserved"'
+  write(unit,'(A)') 'VARIABLES = "Xc","Yc","rho","u","v","p","rhou","rhov","E"'
+  write(unit,'(A,I0,A,I0,A)') &
+    'ZONE I=',grid%i_cell_high-grid%i_cell_low+1, &
+    ', J=',grid%j_cell_high-grid%j_cell_low+1, &
+    ', DATAPACKING=BLOCK'
+
+  !-- Xc, Yc --
+  write(unit,'(E24.16)') ((grid%xc(i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  write(unit,'(E24.16)') ((grid%yc(i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+
+  !-- Primitive: rho, u, v, p --
+  write(unit,'(E24.16)') ((soln%V(1,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  write(unit,'(E24.16)') ((soln%V(2,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  write(unit,'(E24.16)') ((soln%V(3,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  write(unit,'(E24.16)') ((soln%V(4,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+
+  !-- Conserved: rho*u, rho*v, total E (=U(4)) --
+  write(unit,'(E24.16)') ((soln%U(2,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  write(unit,'(E24.16)') ((soln%U(3,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  write(unit,'(E24.16)') ((soln%U(4,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+
+  close(unit)
+end subroutine write_solution_tecplot
+
+
+!-------------------------------------------------------------------
+! Compute & print L2‐norm of discretization error (U - Umms) to terminal
+!-------------------------------------------------------------------
+subroutine compute_discretization_error(grid, soln)
+  use set_precision, only: prec
+  use set_inputs,     only: neq
+  type(grid_t),       intent(in) :: grid
+  type(soln_t),       intent(in) :: soln
+  real(prec), allocatable :: errL2(:)
+  real(prec) :: sumsq
+  integer :: n,i,j, ncell
+
+  ! number of interior cells
+  ncell = (grid%i_cell_high - grid%i_cell_low + 1) * &
+          (grid%j_cell_high - grid%j_cell_low + 1)
+  allocate(errL2(neq))
+
+  do n = 1, neq
+    sumsq = 0.0_prec
+    do j = grid%j_cell_low, grid%j_cell_high
+      do i = grid%i_cell_low, grid%i_cell_high
+        sumsq = sumsq + (soln%U(n,i,j) - soln%Umms(n,i,j))**2
+      end do
+    end do
+    errL2(n) = sqrt(sumsq / real(ncell,prec))
+  end do
+
+  write(*,'(A)') '=== Discretization Error (L2 norm) vs MMS ==='
+  do n = 1, neq
+    write(*,'(A,I0,A,1PE12.5)') '  var ', n, ': ', errL2(n)
+  end do
+
+  deallocate(errL2)
+end subroutine compute_discretization_error
+
 
 
 end module geometry

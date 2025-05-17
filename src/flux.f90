@@ -102,15 +102,15 @@ subroutine compute_lr_states(U, Lxi, Rxi, Leta, Reta,grid)
         end do
     end do
 
-    ! Boundary at i=grid%i_high
+    !! Boundary at i=grid%i_high
     ! do j = grid%j_low, grid%j_high-1
     !     Lxi(:,grid%i_high,j) = V(:,grid%i_high-1,j) + 0.5_prec * (V(:,grid%i_high,j) - V(:,grid%i_high-1,j))
     !     Rxi(:,grid%i_high,j) = V(:,grid%i_high,j) - 0.5_prec * (V(:,grid%i_high,j) - V(:,grid%i_high-1,j))
     ! end do
 
-    ! etadirection extrapolation (faces at j_low:j_high)
+    ! ! etadirection extrapolation (faces at j_low:j_high)
 
-    ! Boundary at j=grid%j_low
+    ! ! Boundary at j=grid%j_low
     ! do i = grid%i_low, grid%i_high-1
     !     Leta(:,i,grid%j_low) = V(:,i,grid%j_low-1) + 0.5_prec * (V(:,i,grid%j_low) - V(:,i,grid%j_low-1))
     !     Reta(:,i,grid%j_low) = V(:,i,grid%j_low) - 0.5_prec * (V(:,i,grid%j_low+1) - V(:,i,grid%j_low))
@@ -322,34 +322,40 @@ subroutine vanleer_flux(VL, VR,nx,ny,F)
     real(prec), dimension(neq), intent(in) :: VL, VR  ! Primitive variables: [rho, u, p]
     real(prec), dimension(neq), intent(out) :: F
     real(prec),intent(in):: nx, ny
-    real(prec) :: rhoL, uL1, pL, aL, hL, rhoR, uR1, pR, aR, hR
-    real(prec) :: rho_avg, u_avg, h_avg, a_avg, Ri
-    real(prec), dimension(neq) :: FL, FR, rvec1, rvec2, rvec3, lambda
-    real(prec) :: dw1, dw2, dw3,epsilon1
+    real(prec) :: rhoL, uL1, pL, aL, hL, rhoR, uR1, pR, aR, hR,vL1,vR1
+    real(prec) :: rho_avg, u_avg, h_avg, a_avg, Ri,unL,unR,v_avg
+    real(prec), dimension(neq) :: FL, FR, rvec1, rvec2, rvec3, lambda,rvec4
+    real(prec) :: dw1, dw2, dw3,epsilon1,dw4
     integer :: i
   
     ! Extract primitive variables from VL (left state)
     rhoL = VL(1)  ! Density
     uL1  = VL(2)  ! Velocity
-    pL   = VL(3)  ! Pressure
+    vL1  = VL(3)  ! Velocity
+    pL   = VL(4)  ! Pressure
     aL   = sqrt(gamma * pL / rhoL)  ! Speed of sound
     ! hL   = aL**2 / (gamma - one) + half * uL1**2  ! Total enthalpy
   
     ! Extract primitive variables from VR (right state)
     rhoR = VR(1)  ! Density
     uR1  = VR(2)  ! Velocity
-    pR   = VR(3)  ! Pressure
+    vR1  = VR(3)  ! Velocity
+    pR   = VR(4)  ! Pressure
     aR   = sqrt(gamma * pR / rhoR)  ! Speed of sound
+
+    unL= uL1*nx+vL1*ny
+    unR = uR1*nx+vR1*ny
     ! hR   = aR**2 / (gamma - one) + half * uR1**2  ! Total enthalpy
-    hL = (pL / rhoL) * (gamma / (gamma - 1.0_prec)) + 0.5_prec * uL1**2
-    hR = (pR / rhoR) * (gamma / (gamma - 1.0_prec)) + 0.5_prec * uR1**2
+    hL = (pL / rhoL) * (gamma / (gamma - 1.0_prec)) + 0.5_prec * ((uL1**2)+(vL1**2))
+    hR = (pR / rhoR) * (gamma / (gamma - 1.0_prec)) + 0.5_prec * ((uR1**2)+(vR1**2))
   
     ! Compute Roe averages
     Ri = sqrt(rhoR / rhoL)
     rho_avg = Ri * rhoL
     u_avg   = (Ri * uR1 + uL1) / (Ri+ one)
+    v_avg   = (Ri*vR1+vL1)/(Ri+one)
     h_avg   = (Ri * hR + hL) / (Ri + one)
-    a_avg   = sqrt((gamma - one) * (h_avg - half * u_avg**2))
+    a_avg   = sqrt((gamma - one) * (h_avg - half*(u_avg**2+v_avg**2)))
   
     ! Define right eigenvectors
     rvec1 = [one, u_avg, half * u_avg**2]  ! Acoustic wave (u)

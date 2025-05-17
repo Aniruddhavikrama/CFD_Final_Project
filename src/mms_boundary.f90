@@ -39,6 +39,8 @@
           soln%V(:, i, grid%jg_high  ) = 2 * soln%V(:, i, grid%jg_high-1) - soln%V(:, i, grid%jg_high-2)
         end do
 
+        ! call limit_primitives(soln%V)
+
         call prim2cons(soln%U, soln%V)
     ! print *, "==== Ghost Cell Values (i, j) and Variables (rho, u, v, p) ===="
     ! do j = grid%jg_low, grid%jg_high

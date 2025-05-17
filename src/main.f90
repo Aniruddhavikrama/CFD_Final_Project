@@ -3,7 +3,8 @@ program main
     use set_constants
     use set_inputs
     use grid_type
-    use geometry, only : write_tecplot_file, cartesian_grid, read_grid, write_solution_dat
+    use geometry, only : write_tecplot_file, cartesian_grid, read_grid, write_solution_dat,write_solution_tecplot,&
+    compute_discretization_error
     use init, only : initialize_mms
     use mms_boundary
     use soln_type
@@ -17,10 +18,10 @@ program main
     type(grid_t) :: grid
     type(soln_t) :: soln
     integer ::  iter, max_iter
-    character(*), parameter :: grid_file = 'curv2d9_1.x'
+    character(*), parameter :: grid_file = 'curv2d257_edited.x'
     integer :: ierr
     real(prec), dimension(4) :: Rnorm
-    ! real(prec), parameter :: CFL = 0.5_prec ! Example CFL number, adjust in set_inputs if needed
+    ! real(prec), parameter :: CFL = 0.5_prec  adjust in set_inputs if needed
   
     ! Set maximum iterations for MMS convergence
     max_iter = 100000 ! Adjust as needed for convergence
@@ -63,7 +64,9 @@ program main
     call calc_time_step(grid, soln) ! Calculates soln%dt
     call calc_residual(grid, soln)    ! Calculates soln%R using current S, Fxi, Feta
     ! call residual_norms(soln%R, soln%rinit, one) ! Set initial norms
-    call residual_norms(soln%R,Rnorm, soln%rinit, grid)
+    ! call residual_norms(soln%R,Rnorm, soln%rinit, grid)
+
+    call residual_norms(soln%R,soln%rinit, [one,one,one,one], grid)
 
 
   
@@ -88,12 +91,16 @@ program main
     
         if (maxval(Rnorm) < 1.0e-10_prec) then
             write(*, '(A, I8)') 'Converged at iteration ', iter
+            call write_solution_tecplot(grid, soln, 'converged_solution.dat')
+            call compute_discretization_error(grid, soln)
+
             exit
         end if
     end do
   
     ! Write final solution
     call write_solution_dat(grid, soln, "mms_final.dat")
+    call write_solution_tecplot(grid, soln, 'converged_solution.dat')
   
     ! Clean up
     call deallocate_soln(soln)
