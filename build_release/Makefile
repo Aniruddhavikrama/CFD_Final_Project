@@ -382,6 +382,30 @@ src/mms_constants.f90.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/mms_constants.f90.s
 .PHONY : src/mms_constants.f90.s
 
+src/residual_io.o: src/residual_io.f90.o
+.PHONY : src/residual_io.o
+
+# target to build an object file
+src/residual_io.f90.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/residual_io.f90.o
+.PHONY : src/residual_io.f90.o
+
+src/residual_io.i: src/residual_io.f90.i
+.PHONY : src/residual_io.i
+
+# target to preprocess a source file
+src/residual_io.f90.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/residual_io.f90.i
+.PHONY : src/residual_io.f90.i
+
+src/residual_io.s: src/residual_io.f90.s
+.PHONY : src/residual_io.s
+
+# target to generate assembly for a file
+src/residual_io.f90.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/residual_io.f90.s
+.PHONY : src/residual_io.f90.s
+
 src/set_constants.o: src/set_constants.f90.o
 .PHONY : src/set_constants.o
 
@@ -566,6 +590,9 @@ help:
 	@echo "... src/mms_constants.o"
 	@echo "... src/mms_constants.i"
 	@echo "... src/mms_constants.s"
+	@echo "... src/residual_io.o"
+	@echo "... src/residual_io.i"
+	@echo "... src/residual_io.s"
 	@echo "... src/set_constants.o"
 	@echo "... src/set_constants.i"
 	@echo "... src/set_constants.s"

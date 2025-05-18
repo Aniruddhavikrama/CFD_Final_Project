@@ -397,31 +397,78 @@ subroutine compute_discretization_error(grid, soln)
   use set_inputs,     only: neq
   type(grid_t),       intent(in) :: grid
   type(soln_t),       intent(in) :: soln
-  real(prec), allocatable :: errL2(:)
-  real(prec) :: sumsq
-  integer :: n,i,j, ncell
-
+  real(prec), allocatable :: errL1(:), errL2(:), errLinf(:)
+  real(prec) :: sum_abs, sumsq, max_err,current_err
+  integer :: n, i, j, ncell, unit_file
+  character(len=100) :: filename
+  
   ! number of interior cells
   ncell = (grid%i_cell_high - grid%i_cell_low + 1) * &
           (grid%j_cell_high - grid%j_cell_low + 1)
+  
+  ! Allocate error arrays for each norm
+  allocate(errL1(neq))
   allocate(errL2(neq))
-
+  allocate(errLinf(neq))
+  
+  ! Initialize error norms
+  errL1   = 0.0_prec
+  errL2   = 0.0_prec
+  errLinf = 0.0_prec
+  
+  ! Calculate all error norms for each equation
   do n = 1, neq
-    sumsq = 0.0_prec
+    sum_abs = 0.0_prec
+    sumsq   = 0.0_prec
+    max_err = 0.0_prec
+    
     do j = grid%j_cell_low, grid%j_cell_high
       do i = grid%i_cell_low, grid%i_cell_high
-        sumsq = sumsq + (soln%U(n,i,j) - soln%Umms(n,i,j))**2
+        ! Current error at this cell
+        current_err = abs(soln%U(n,i,j) - soln%Umms(n,i,j))
+        
+        ! L1 norm - sum of absolute errors
+        sum_abs = sum_abs + current_err
+        
+        ! L2 norm - sum of squared errors
+        sumsq = sumsq + current_err**2
+        
+        ! Linf norm - maximum absolute error
+        max_err = max(max_err, current_err)
       end do
     end do
-    errL2(n) = sqrt(sumsq / real(ncell,prec))
+    
+    ! Finalize norms
+    errL1(n)   = sum_abs / real(ncell,prec)
+    errL2(n)   = sqrt(sumsq / real(ncell,prec))
+    errLinf(n) = max_err
   end do
-
-  write(*,'(A)') '=== Discretization Error (L2 norm) vs MMS ==='
+  
+  ! Display results to screen
+  write(*,'(A)') '=== Discretization Error Norms vs MMS ==='
+  write(*,'(A)') '    Variable      L1 Norm         L2 Norm        Linf Norm'
+  write(*,'(A)') '   ---------    ------------    ------------    ------------'
   do n = 1, neq
-    write(*,'(A,I0,A,1PE12.5)') '  var ', n, ': ', errL2(n)
+    write(*,'(4X,I0,4X,3(4X,1PE12.5))') n, errL1(n), errL2(n), errLinf(n)
   end do
-
-  deallocate(errL2)
+  
+  ! Write results to file
+  filename = 'discretization_errors.txt'
+  open(newunit=unit_file, file=trim(filename), status='replace', action='write')
+  
+  write(unit_file,'(A)') '=== Discretization Error Norms vs MMS ==='
+  write(unit_file,'(A)') '    Variable      L1 Norm         L2 Norm        Linf Norm'
+  write(unit_file,'(A)') '   ---------    ------------    ------------    ------------'
+  do n = 1, neq
+    write(unit_file,'(4X,I0,4X,3(4X,1PE12.5))') n, errL1(n), errL2(n), errLinf(n)
+  end do
+  
+  close(unit_file)
+  write(*,'(A,A)') 'Error norms written to file: ', trim(filename)
+  
+  ! Free memory
+  deallocate(errL1, errL2, errLinf)
+  
 end subroutine compute_discretization_error
 
 

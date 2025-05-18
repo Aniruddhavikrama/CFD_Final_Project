@@ -12,6 +12,7 @@ program main
     use time_module, only : explicit_RK, calc_residual, residual_norms, calc_time_step,evaluate_mms_source
     use variable_conversion
     use limiters
+    use residual_io
   
     implicit none
   
@@ -87,6 +88,7 @@ program main
     
         if (mod(iter, residual_out_freq) == 0) then
             write(*, '(I8, 4ES14.6)') iter, Rnorm(1), Rnorm(2), Rnorm(3), Rnorm(4)
+            call write_residuals(iter, Rnorm) ! Write residuals to residual.dat
         end if
     
         if (maxval(Rnorm) < 1.0e-8_prec) then
