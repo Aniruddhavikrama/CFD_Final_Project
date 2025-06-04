@@ -5,3 +5,6 @@
 *.x
 dump/
 build/
+*.o
+*.stamp
+*.build
