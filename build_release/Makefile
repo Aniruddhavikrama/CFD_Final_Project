@@ -286,6 +286,30 @@ src/grid_type.f90.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/grid_type.f90.s
 .PHONY : src/grid_type.f90.s
 
+src/inlet_boundary.o: src/inlet_boundary.f90.o
+.PHONY : src/inlet_boundary.o
+
+# target to build an object file
+src/inlet_boundary.f90.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/inlet_boundary.f90.o
+.PHONY : src/inlet_boundary.f90.o
+
+src/inlet_boundary.i: src/inlet_boundary.f90.i
+.PHONY : src/inlet_boundary.i
+
+# target to preprocess a source file
+src/inlet_boundary.f90.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/inlet_boundary.f90.i
+.PHONY : src/inlet_boundary.f90.i
+
+src/inlet_boundary.s: src/inlet_boundary.f90.s
+.PHONY : src/inlet_boundary.s
+
+# target to generate assembly for a file
+src/inlet_boundary.f90.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/inlet_boundary.f90.s
+.PHONY : src/inlet_boundary.f90.s
+
 src/limiters.o: src/limiters.f90.o
 .PHONY : src/limiters.o
 
@@ -578,6 +602,9 @@ help:
 	@echo "... src/grid_type.o"
 	@echo "... src/grid_type.i"
 	@echo "... src/grid_type.s"
+	@echo "... src/inlet_boundary.o"
+	@echo "... src/inlet_boundary.i"
+	@echo "... src/inlet_boundary.s"
 	@echo "... src/limiters.o"
 	@echo "... src/limiters.i"
 	@echo "... src/limiters.s"

@@ -10,6 +10,7 @@ module time_module
     use mms_boundary
     use mms_functions, only: wrap_rmassconv, wrap_xmtmconv, wrap_ymtmconv, wrap_energyconv
     use flux, only : compute_fluxes
+    use inlet_boundary
 
     implicit none
 
@@ -223,11 +224,16 @@ subroutine explicit_RK(grid, soln)
       do j = 1, 4
         ! Apply MMS Dirichlet boundary conditions
         ! call apply_mms_boundary(grid, soln)
+        ! call apply_inlet_boundary(grid,soln)
 
         call update_states(soln, grid)
+        ! call apply_inlet_bc(grid,soln)
+        call apply_slip_walls(grid,soln)
+        call apply_outflow_bc(grid,soln)
         ! Set source term for MMS
-        call evaluate_mms_source(grid,soln)
-        soln%S = soln%Smms
+        ! call evaluate_mms_source(grid,soln)
+        ! soln%S = soln%Smms
+        soln%S = 0.0_prec
         ! Convert primitive to conserved variables
         call prim2cons(soln%U, soln%V)
         ! Compute fluxes
@@ -298,19 +304,6 @@ subroutine explicit_RK(grid, soln)
             end do
         end do
 
-      !!!seperate
-
-      
-      ! do j = grid%j_low,grid%j_high
-      !   do i = grid%i_low,grid%i_high
-      !     soln%R(:, i, j) = soln%R(:, i, j) &
-      !                     + grid%A_xi(i+1, j) * soln%Fxi(:, i+1, j) &
-      !                     - grid%A_xi(i, j) * soln%Fxi(:, i, j) &
-      !                     + grid%A_eta(i, j+1) * soln%Feta(:, i, j) &
-      !                     - grid%A_eta(i, j) * soln%Feta(:, i, j-1) &
-      !                     - grid%V(i, j) * soln%S(:, i, j)
-      !   end do
-      ! end do
     end subroutine calc_residual
   
     subroutine residual_norms(R, rnorm, rinit,grid)

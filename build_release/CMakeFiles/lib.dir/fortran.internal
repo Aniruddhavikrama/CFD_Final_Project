@@ -5,6 +5,7 @@ provides
  geometry.mod
  grid_type.mod
  init.mod
+ inlet_boundary.mod
  limiters.mod
  mms_boundary.mod
  mms_constants.mod

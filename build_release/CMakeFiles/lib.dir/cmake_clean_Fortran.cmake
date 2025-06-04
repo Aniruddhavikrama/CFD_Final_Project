@@ -20,6 +20,10 @@ FILE(REMOVE
   "lib/INIT.mod"
   "CMakeFiles/lib.dir/init.mod.stamp"
 
+  "lib/inlet_boundary.mod"
+  "lib/INLET_BOUNDARY.mod"
+  "CMakeFiles/lib.dir/inlet_boundary.mod.stamp"
+
   "lib/limiters.mod"
   "lib/LIMITERS.mod"
   "CMakeFiles/lib.dir/limiters.mod.stamp"

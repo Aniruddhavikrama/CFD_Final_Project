@@ -4,7 +4,7 @@ program main
     use set_inputs
     use grid_type
     use geometry, only : write_tecplot_file, cartesian_grid, read_grid, write_solution_dat,write_solution_tecplot,&
-    compute_discretization_error
+    compute_discretization_error, write_grid_and_cells_tecplot,write_solution_tecplot_iterations, write_soln_header
     use init, only : initialize_mms
     use mms_boundary
     use soln_type
@@ -13,19 +13,16 @@ program main
     use variable_conversion
     use limiters
     use residual_io
+    use inlet_boundary
   
     implicit none
   
     type(grid_t) :: grid
     type(soln_t) :: soln
-    integer ::  iter, max_iter
-    character(*), parameter :: grid_file = 'curv2d33_edited.x'
+    integer ::  iter
+    character(*), parameter :: grid_file = 'Inlet_fixed.53x17.grd '
     integer :: ierr
     real(prec), dimension(4) :: Rnorm
-    ! real(prec), parameter :: CFL = 0.5_prec  adjust in set_inputs if needed
-  
-    ! Set maximum iterations for MMS convergence
-    max_iter = 100000 ! Adjust as needed for convergence
   
     ! Initialize constants and inputs
     call set_derived_constants
@@ -50,13 +47,17 @@ program main
     ! Initialize MMS solutions
     call init_limiters(grid)
 
-    call initialize_mms(grid, soln) ! Sets soln%V to MMS, then soln%U from soln%V
-    call apply_mms_boundary(grid,soln) ! Extrapolates soln%V to ghost, updates soln%U in ghost
-    call update_states   (soln, grid) ! Syncs U,V, limits V, updates U, calc asnd
+    ! call initialize_mms(grid, soln) ! Sets soln%V to MMS, then soln%U from soln%V
+    call initialize_flow(grid,soln)
+    ! call apply_mms_boundary(grid,soln) ! Extrapolates soln%V to ghost, updates soln%U in ghost
+    call apply_inlet_bc(grid,soln)
+    call apply_slip_walls(grid,soln)
+    call apply_outflow_bc(grid,soln)
+    ! call update_states   (soln, grid) ! Syncs U,V, limits V, updates U, calc asnd
 
     ! Calculate MMS source terms for the initial residual calculation
-    call evaluate_mms_source(grid, soln) ! Calculates soln%Smms
-    soln%S = soln%Smms                   ! Assign Smms to S
+    ! call evaluate_mms_source(grid, soln) ! Calculates soln%Smms
+    ! soln%S = soln%Smms                   ! Assign Smms to S
 
     ! Calculate fluxes based on the initial state
     call compute_fluxes(grid,soln)    ! Calculates soln%Fxi, soln%Feta
@@ -64,16 +65,16 @@ program main
     ! Calculate initial residual for normalization
     call calc_time_step(grid, soln) ! Calculates soln%dt
     call calc_residual(grid, soln)    ! Calculates soln%R using current S, Fxi, Feta
-    ! call residual_norms(soln%R, soln%rinit, one) ! Set initial norms
-    ! call residual_norms(soln%R,Rnorm, soln%rinit, grid)
-
     call residual_norms(soln%R,soln%rinit, [one,one,one,one], grid)
 
 
   
     ! Write initial solution
     call write_solution_dat(grid, soln, "mms_initial.dat")
-  
+    call write_grid_and_cells_tecplot(grid, 'grid_with_cells.dat')
+
+    ! create file for solution evolution
+    call write_soln_header('solution_evolution.dat')
     ! Main time-stepping loop
     write(*, '(A)') 'Iteration  Continuity    X-Momentum    Y-Momentum    Energy'
 ! Main loop
@@ -85,13 +86,14 @@ program main
         call calc_time_step(grid, soln)
         call calc_residual(grid, soln)
         call residual_norms(soln%R, Rnorm, soln%rinit, grid)
+        call write_solution_tecplot_iterations(grid, soln, 'solution_evolution.dat', iter)
     
         if (mod(iter, residual_out_freq) == 0) then
             write(*, '(I8, 4ES14.6)') iter, Rnorm(1), Rnorm(2), Rnorm(3), Rnorm(4)
             call write_residuals(iter, Rnorm) ! Write residuals to residual.dat
         end if
     
-        if (maxval(Rnorm) < 1.0e-8_prec) then
+        if (maxval(Rnorm) < tol) then
             write(*, '(A, I8)') 'Converged at iteration ', iter
             call write_solution_tecplot(grid, soln, 'converged_solution.dat')
             call compute_discretization_error(grid, soln)

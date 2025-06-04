@@ -8,7 +8,9 @@ module geometry
   implicit none
   private
 
-  public :: cartesian_grid,write_tecplot_file,read_grid,write_solution_dat,write_solution_tecplot,compute_discretization_error
+  public :: cartesian_grid,write_tecplot_file,read_grid,write_solution_dat,write_solution_tecplot,&
+  compute_discretization_error, write_grid_and_cells_tecplot,write_solution_tecplot_iterations,   &
+  write_soln_header
   
 contains
 
@@ -74,7 +76,8 @@ subroutine read_grid(grid, grid_file, ierr)
   if (ios /= 0) then
     ierr = ios
     print *, '*** Error: cannot open grid file ', trim(grid_file)
-    return
+    ! return
+    stop
   end if
 
   !––– skip the block‐count line –––
@@ -83,23 +86,26 @@ subroutine read_grid(grid, grid_file, ierr)
     ierr = ios
     print *, '*** Error: reading block count from ', trim(grid_file)
     close(unit_grid)
-    return
+    ! return
+    stop
   end if
 
   !––– read ni, nj, (and discard any 3rd integer) –––
-  read(unit_grid, *, iostat=ios) ni, nj, blockID
+  read(unit_grid, *, iostat=ios) ni, nj !, blockID
   if (ios /= 0) then
     ierr = ios
     print *, '*** Error: reading dims from ', trim(grid_file)
     close(unit_grid)
-    return
+    ! return
+    stop
   end if
 
   if (ni < 2 .or. nj < 2) then
     ierr = 1
     print *, '*** Error: invalid grid dimensions: ni=', ni, ' nj=', nj
     close(unit_grid)
-    return
+    ! return
+    stop
   end if
 
   !––– convert to cell‐counts and set all our index bounds –––
@@ -131,7 +137,8 @@ subroutine read_grid(grid, grid_file, ierr)
     print *, '*** Error: reading X coords from ', trim(grid_file)
     call deallocate_grid(grid)
     close(unit_grid)
-    return
+    ! return
+    stop
   end if
 
   !––– read Y‐coordinates –––
@@ -141,7 +148,8 @@ subroutine read_grid(grid, grid_file, ierr)
     print *, '*** Error: reading Y coords from ', trim(grid_file)
     call deallocate_grid(grid)
     close(unit_grid)
-    return
+    ! return
+    stop
   end if
 
   close(unit_grid)
@@ -470,6 +478,173 @@ subroutine compute_discretization_error(grid, soln)
   deallocate(errL1, errL2, errLinf)
   
 end subroutine compute_discretization_error
+
+
+subroutine write_grid_tecplot(grid, filename)
+  use set_precision, only : prec
+  type(grid_t), intent(in) :: grid
+  character(len=*), intent(in) :: filename
+  integer :: i, j, unit
+  
+  ! Open the file
+  open(newunit=unit, file=trim(filename), status='replace', action='write')
+  
+  ! Write the Tecplot header for grid vertices
+  write(unit, '(A)') 'TITLE = "2D Grid Mesh"'
+  write(unit, '(A)') 'VARIABLES = "X", "Y"'
+  
+  ! Use FEQUADRILATERAL for proper connectivity
+  write(unit, '(A,I0,A,I0,A)') 'ZONE T="Grid", I=', grid%i_high - grid%i_low + 1, &
+                               ', J=', grid%j_high - grid%j_low + 1, &
+                               ', DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL'
+  
+  ! Write vertex coordinates with safer formatting
+  do j = grid%j_low, grid%j_high
+    do i = grid%i_low, grid%i_high
+      write(unit, '(2(1X,E23.15))') grid%x(i,j), grid%y(i,j)
+    end do
+  end do
+  
+  close(unit)
+  
+  write(*,'(A,A)') 'Grid vertices written to: ', trim(filename)
+end subroutine write_grid_tecplot
+
+
+! Alternative: Write both grid lines and cell centers
+subroutine write_grid_and_cells_tecplot(grid, filename)
+  use set_precision, only : prec
+  type(grid_t), intent(in) :: grid
+  character(len=*), intent(in) :: filename
+  integer :: i, j, unit
+  
+  open(newunit=unit, file=trim(filename), status='replace', action='write')
+  
+  write(unit, '(A)') 'TITLE = "2D Grid with Cell Centers"'
+  write(unit, '(A)') 'VARIABLES = "X", "Y"'
+  
+  ! Zone 1: Grid vertices (mesh)
+  write(unit, '(A,I0,A,I0,A)') 'ZONE T="Grid Mesh", I=', grid%i_high - grid%i_low + 1, &
+                               ', J=', grid%j_high - grid%j_low + 1, &
+                               ', DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL'
+  
+  do j = grid%j_low, grid%j_high
+    do i = grid%i_low, grid%i_high
+      write(unit, '(2(1X,E23.15))') grid%x(i,j), grid%y(i,j)
+    end do
+  end do
+  
+  ! Zone 2: Cell centers (as scatter points)
+  write(unit, '(A,I0,A)') 'ZONE T="Cell Centers", I=', &
+                         (grid%i_cell_high - grid%i_cell_low + 1) * &
+                         (grid%j_cell_high - grid%j_cell_low + 1), &
+                         ', DATAPACKING=POINT, ZONETYPE=SCATTERED'
+  
+  do j = grid%j_cell_low, grid%j_cell_high
+    do i = grid%i_cell_low, grid%i_cell_high
+      write(unit, '(2(1X,E23.15))') grid%xc(i,j), grid%yc(i,j)
+    end do
+  end do
+  
+  close(unit)
+  
+  write(*,'(A,A)') 'Grid and cell centers written to: ', trim(filename)
+end subroutine write_grid_and_cells_tecplot
+
+!-------------------------------------------------------------------
+! Write solution to Tecplot file at specified iteration intervals
+! This subroutine appends solution data to a single file to show 
+! evolution over iterations
+!-------------------------------------------------------------------
+subroutine write_solution_tecplot_iterations(grid, soln, filename, iteration)
+  use set_precision, only: prec
+  use set_constants,  only: zero
+  type(grid_t),       intent(in)  :: grid
+  type(soln_t),       intent(in)  :: soln
+  character(len=*),   intent(in)  :: filename
+  integer,            intent(in)  :: iteration
+  
+  integer             :: i, j, unit
+  logical             :: file_exists
+  character(len=20)   :: zone_title
+  
+  ! Check if we should write at this iteration
+  if (mod(iteration, soln_out_freq) /= 0) return
+  
+  ! Check if file already exists
+  inquire(file=trim(filename), exist=file_exists)
+  
+  if (.not. file_exists) then
+    ! Create new file with header
+    open(newunit=unit, file=trim(filename), status='replace', action='write')
+    
+    write(unit,'(A)') 'TITLE = "Solution Evolution Over Iterations"'
+    write(unit,'(A)') 'VARIABLES = "Xc","Yc","rho","u","v","p","rhou","rhov","E"'
+  else
+    ! Append to existing file
+    open(newunit=unit, file=trim(filename), status='old', position='append', action='write')
+  end if
+  
+  ! Create zone title with iteration number
+  write(zone_title, '(A,I0)') 'Iteration_', iteration
+  
+  ! Write zone header
+    write(unit,'(A,I0,A,I0,A)') 'ZONE I=', &
+         grid%i_high - grid%i_low + 1, &
+         ', J=', grid%j_high - grid%j_low + 1, &
+         ', DATAPACKING=BLOCK'
+    write(unit,'(A)') 'DT=(DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE,DOUBLE)'
+    write(unit, '(A)') 'Varlocation=([3-10]=CELLCENTERED)'
+
+  !-- Node coordinates --
+  write(unit,'(E24.16)') ((grid%x(i,j), i=grid%i_low,grid%i_high), &
+                          j=grid%j_low,grid%j_high)
+  write(unit,'(E24.16)') ((grid%y(i,j), i=grid%i_low,grid%i_high), &
+                          j=grid%j_low,grid%j_high)
+   ! !-- Cell center coordinates --
+  ! write(unit,'(E24.16)') ((grid%xc(i,j), i=grid%i_cell_low,grid%i_cell_high), &
+  !                         j=grid%j_cell_low,grid%j_cell_high)
+  ! write(unit,'(E24.16)') ((grid%yc(i,j), i=grid%i_cell_low,grid%i_cell_high), &
+  !                         j=grid%j_cell_low,grid%j_cell_high)
+  
+  !-- Primitive variables: rho, u, v, p --
+  write(unit,'(E24.16)') ((soln%V(1,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  write(unit,'(E24.16)') ((soln%V(2,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  write(unit,'(E24.16)') ((soln%V(3,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  write(unit,'(E24.16)') ((soln%V(4,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  
+  !-- Conserved variables: rho*u, rho*v, total E --
+  write(unit,'(E24.16)') ((soln%U(2,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  write(unit,'(E24.16)') ((soln%U(3,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  write(unit,'(E24.16)') ((soln%U(4,i,j), i=grid%i_cell_low,grid%i_cell_high), &
+                          j=grid%j_cell_low,grid%j_cell_high)
+  
+  close(unit)
+  
+  write(*,'(A,I0,A,A)') 'Solution at iteration ', iteration, ' written to: ', trim(filename)
+  
+end subroutine write_solution_tecplot_iterations
+
+subroutine write_soln_header(filename)
+
+  character(len=*),   intent(in)  :: filename
+  integer :: unit
+  
+    ! Create new file with header
+    open(newunit=unit, file=trim(filename), status='replace', action='write')
+    
+    write(unit,'(A)') 'TITLE = "Solution Evolution Over Iterations"'
+    write(unit,'(A)') 'VARIABLES = "Xc","Yc","rho","u","v","p","rhou","rhov","E"'
+
+    close(unit)
+
+end subroutine write_soln_header
 
 
 

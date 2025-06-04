@@ -70,7 +70,7 @@ subroutine compute_lr_states(U, Lxi, Rxi, Leta, Reta,grid)
             V(4,i,j) = (gamma - one) * (U(4,i,j) - half * (U(2,i,j)**2 + U(3,i,j)**2) / U(1,i,j))  ! p
         end do
     end do
-    ! call limit_primitives(V)
+    call limit_primitives(V)
 
     ! Initialize limiter arrays
     psi_plus_xi = one
@@ -209,12 +209,12 @@ subroutine compute_fluxes(grid, soln)
     ! call limit_primitives(soln%U, Rxi)
     ! call limit_primitives(soln%U, Leta)
     ! call limit_primitives(soln%U, Reta)
-    ! call limit_primitives(Lxi)
-    ! call limit_primitives( Rxi)
-    ! call limit_primitives( Leta)
-    ! call limit_primitives( Reta)
+    call limit_primitives(Lxi)
+    call limit_primitives( Rxi)
+    call limit_primitives( Leta)
+    call limit_primitives( Reta)
 
-    ! Compute ξ-direction fluxes
+    ! Compute xsi-direction fluxes
     do j = grid%j_low, grid%j_high-1
         do i = grid%i_low, grid%i_high
             nx = grid%n_xi(i,j,1)
@@ -223,7 +223,7 @@ subroutine compute_fluxes(grid, soln)
         end do
     end do
 
-    ! Compute η-direction fluxes
+    ! Compute eta-direction fluxes
     do j = grid%j_low, grid%j_high
         do i = grid%i_low, grid%i_high-1
             nx = grid%n_eta(i,j,1)
