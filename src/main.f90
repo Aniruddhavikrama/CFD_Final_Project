@@ -53,7 +53,7 @@ program main
     call apply_inlet_bc(grid,soln)
     call apply_slip_walls(grid,soln)
     call apply_outflow_bc(grid,soln)
-    ! call update_states   (soln, grid) ! Syncs U,V, limits V, updates U, calc asnd
+    call update_states   (soln, grid) ! Syncs U,V, limits V, updates U, calc asnd
 
     ! Calculate MMS source terms for the initial residual calculation
     ! call evaluate_mms_source(grid, soln) ! Calculates soln%Smms
@@ -79,6 +79,12 @@ program main
     write(*, '(A)') 'Iteration  Continuity    X-Momentum    Y-Momentum    Energy'
 ! Main loop
     do iter = 1, max_iter
+        if (iter == second_order_switch_iterations .and. order == 1) then
+            write(*, '(A, I8)') 'Switching to second-order at iteration ', iter
+            order = 2
+            ! Optionally, you might want to recalculate some initialization here
+            call update_states(soln, grid) ! If needed to recalculate limiters
+        end if
         call explicit_RK(grid, soln)
         ! call apply_mms_boundary(grid, soln)
           ! 2) reconstruct face‐values & compute fluxes on those faces

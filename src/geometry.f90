@@ -92,6 +92,7 @@ subroutine read_grid(grid, grid_file, ierr)
 
   !––– read ni, nj, (and discard any 3rd integer) –––
   read(unit_grid, *, iostat=ios) ni, nj !, blockID
+    ! read(unit_grid, *, iostat=ios) ni, nj , blockID
   if (ios /= 0) then
     ierr = ios
     print *, '*** Error: reading dims from ', trim(grid_file)

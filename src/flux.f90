@@ -48,7 +48,7 @@ subroutine compute_lr_states(U, Lxi, Rxi, Leta, Reta,grid)
     real(prec), dimension(neq,grid%ig_low:grid%ig_high,grid%jg_low:grid%jg_high) :: V
     real(prec), dimension(neq,grid%ig_low:grid%ig_high,grid%jg_low:grid%jg_high) :: psi_plus_xi, psi_minus_xi
     real(prec), dimension(neq,grid%ig_low:grid%ig_high,grid%jg_low:grid%jg_high) :: psi_plus_eta, psi_minus_eta
-    real(prec) :: epsilon
+    real(prec) :: epsilon   
     integer :: i, j
 
     ! Set epsilon based on order

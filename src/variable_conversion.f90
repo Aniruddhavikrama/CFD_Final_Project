@@ -82,8 +82,8 @@ subroutine prim2cons( U, V )
     do j = lbound(V,3),ubound(V,3)
       do i = lbound(V,2),ubound(V,2)
         V(1,i,j) = max(0.0001_prec,V(1,i,j))
-        V(2,i,j) = max(10.0_prec,V(2,i,j))
-        V(3,i,j) = max(10.0_prec,V(3,i,j))
+        ! V(2,i,j) = max(10.0_prec,V(2,i,j))
+        ! V(3,i,j) = max(10.0_prec,V(3,i,j))
         V(4,i,j) = max(1.0_prec,V(4,i,j))
       end do
     end do
