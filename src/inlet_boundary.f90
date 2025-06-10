@@ -25,7 +25,7 @@ module inlet_boundary
     real(prec), parameter :: y_inlet_max = 0.6_prec ! Maximum y-coordinate for inlet
     
     ! Boundary configuration - will be set by user
-    integer, save :: i_inlet_max = 20  ! Default value, can be changed by user
+    integer, save :: i_inlet_max = 160  ! Default value, can be changed by user
     
 contains
 

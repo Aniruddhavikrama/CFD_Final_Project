@@ -20,7 +20,7 @@ program main
     type(grid_t) :: grid
     type(soln_t) :: soln
     integer ::  iter
-    character(*), parameter :: grid_file = 'Inlet_fixed.53x17.grd '
+    character(*), parameter :: grid_file = 'Inlet_fixed.417x129.grd'
     integer :: ierr
     real(prec), dimension(4) :: Rnorm
   

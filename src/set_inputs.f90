@@ -39,12 +39,12 @@ module set_inputs
   integer,public :: order =2
   integer,public :: flux_scheme =1
   integer,public :: residual_out_freq= 1
-  integer,public :: limiter_scheme = 1  ! 0: none, 1: Van Leer, 2: Minmod
+  integer,public :: limiter_scheme = 1  ! 0: none, 1: Van Leer, 2: Minmod ,3: Venkatakrishnan, 4: Beta
   integer,public :: freeze_limiter_iter =100000 ! Freeze limiters after this iteration
   integer,public :: max_iter = 300000
   integer,public :: soln_out_freq =1000
   real(prec), public :: tol = 1.0e-10_prec
-  integer,public :: second_order_switch_iterations = 50000
+  integer,public :: second_order_switch_iterations = 1000
 
 
 
@@ -53,7 +53,7 @@ module set_inputs
   real(prec) :: xmax       = one
   real(prec) :: ymin       = zero
   real(prec) :: ymax       = one
-  real(prec) :: CFL =       0.01_prec
+  real(prec) :: CFL =       0.1_prec
   real(prec) :: Lmms     = 1.0_prec
   real(prec) :: kappa   = -1.0_prec !!!MUSCL Scheme
    
