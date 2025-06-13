@@ -27,6 +27,19 @@ CMakeFiles/lib.dir/mms_functions.mod.stamp: CMakeFiles/lib.dir/src/MMS_functions
 CMakeFiles/lib.dir/src/MMS_functions.f90.o.provides.build:
 	$(CMAKE_COMMAND) -E touch CMakeFiles/lib.dir/src/MMS_functions.f90.o.provides.build
 CMakeFiles/lib.dir/build: CMakeFiles/lib.dir/src/MMS_functions.f90.o.provides.build
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.o: CMakeFiles/lib.dir/fluid_constants.mod.stamp
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.o: CMakeFiles/lib.dir/grid_type.mod.stamp
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.o: CMakeFiles/lib.dir/set_constants.mod.stamp
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.o: CMakeFiles/lib.dir/set_inputs.mod.stamp
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.o: CMakeFiles/lib.dir/set_precision.mod.stamp
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.o: CMakeFiles/lib.dir/soln_type.mod.stamp
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.o: CMakeFiles/lib.dir/variable_conversion.mod.stamp
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.o.provides.build: CMakeFiles/lib.dir/airfoil_boundary.mod.stamp
+CMakeFiles/lib.dir/airfoil_boundary.mod.stamp: CMakeFiles/lib.dir/src/airfoil_boundary.f90.o
+	$(CMAKE_COMMAND) -E cmake_copy_f90_mod lib/airfoil_boundary.mod CMakeFiles/lib.dir/airfoil_boundary.mod.stamp GNU
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.o.provides.build:
+	$(CMAKE_COMMAND) -E touch CMakeFiles/lib.dir/src/airfoil_boundary.f90.o.provides.build
+CMakeFiles/lib.dir/build: CMakeFiles/lib.dir/src/airfoil_boundary.f90.o.provides.build
 CMakeFiles/lib.dir/src/fluid_constants.f90.o: CMakeFiles/lib.dir/set_constants.mod.stamp
 CMakeFiles/lib.dir/src/fluid_constants.f90.o: CMakeFiles/lib.dir/set_precision.mod.stamp
 CMakeFiles/lib.dir/src/fluid_constants.f90.o.provides.build: CMakeFiles/lib.dir/fluid_constants.mod.stamp
@@ -150,6 +163,7 @@ CMakeFiles/lib.dir/soln_type.mod.stamp: CMakeFiles/lib.dir/src/soln_type.f90.o
 CMakeFiles/lib.dir/src/soln_type.f90.o.provides.build:
 	$(CMAKE_COMMAND) -E touch CMakeFiles/lib.dir/src/soln_type.f90.o.provides.build
 CMakeFiles/lib.dir/build: CMakeFiles/lib.dir/src/soln_type.f90.o.provides.build
+CMakeFiles/lib.dir/src/time_module.f90.o: CMakeFiles/lib.dir/airfoil_boundary.mod.stamp
 CMakeFiles/lib.dir/src/time_module.f90.o: CMakeFiles/lib.dir/flux.mod.stamp
 CMakeFiles/lib.dir/src/time_module.f90.o: CMakeFiles/lib.dir/grid_type.mod.stamp
 CMakeFiles/lib.dir/src/time_module.f90.o: CMakeFiles/lib.dir/inlet_boundary.mod.stamp

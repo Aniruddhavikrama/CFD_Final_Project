@@ -14,13 +14,14 @@ program main
     use limiters
     use residual_io
     use inlet_boundary
+    use airfoil_boundary
   
     implicit none
   
     type(grid_t) :: grid
     type(soln_t) :: soln
     integer ::  iter
-    character(*), parameter :: grid_file = 'Inlet_fixed.417x129.grd'
+    character(*), parameter :: grid_file = 'NACA64A006coarse_fixed.49x14.grd'
     integer :: ierr
     real(prec), dimension(4) :: Rnorm
   
@@ -46,18 +47,32 @@ program main
   
     ! Initialize MMS solutions
     call init_limiters(grid)
+    
 
+    !FOR MMS CASE
     ! call initialize_mms(grid, soln) ! Sets soln%V to MMS, then soln%U from soln%V
-    call initialize_flow(grid,soln)
     ! call apply_mms_boundary(grid,soln) ! Extrapolates soln%V to ghost, updates soln%U in ghost
-    call apply_inlet_bc(grid,soln)
-    call apply_slip_walls(grid,soln)
-    call apply_outflow_bc(grid,soln)
+    ! call evaluate_mms_source(grid, soln) ! Calculates soln%Smms
+    ! soln%S = soln%Smms                   ! Assign Smms to S
+
+    ! FOR SUPERSONIC INLET
+    ! call initialize_flow(grid,soln)
+    ! call apply_inlet_bc(grid,soln)
+    ! call apply_slip_walls(grid,soln)
+    ! call apply_outflow_bc(grid,soln)
+
+    !FOR AIRFOIL CASE
+    call initialize_airfoil_flow(grid,soln)
+    call apply_farfield_bc(grid, soln)
+    call apply_airfoil_outflow_bc(grid, soln)
+    call apply_airfoil_slip_wall(grid, soln)
+    call apply_wake_cut_bc(grid, soln)
+   
+
     call update_states   (soln, grid) ! Syncs U,V, limits V, updates U, calc asnd
 
     ! Calculate MMS source terms for the initial residual calculation
-    ! call evaluate_mms_source(grid, soln) ! Calculates soln%Smms
-    ! soln%S = soln%Smms                   ! Assign Smms to S
+
 
     ! Calculate fluxes based on the initial state
     call compute_fluxes(grid,soln)    ! Calculates soln%Fxi, soln%Feta

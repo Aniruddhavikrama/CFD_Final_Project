@@ -26,7 +26,7 @@ module set_constants
     real(prec), parameter :: seven  = 7.0_prec
     real(prec), parameter :: eight  = 8.0_prec
     real(prec), parameter :: nine   = 9.0_prec
-    real(prec)            :: pi     = 3.0_prec
+    real(prec)            :: pi     = acos(-1.0_prec)
   
     contains
   

@@ -1,5 +1,9 @@
 # Remove fortran modules provided by this target.
 FILE(REMOVE
+  "lib/airfoil_boundary.mod"
+  "lib/AIRFOIL_BOUNDARY.mod"
+  "CMakeFiles/lib.dir/airfoil_boundary.mod.stamp"
+
   "lib/fluid_constants.mod"
   "lib/FLUID_CONSTANTS.mod"
   "CMakeFiles/lib.dir/fluid_constants.mod.stamp"

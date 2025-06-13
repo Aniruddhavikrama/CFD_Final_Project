@@ -293,6 +293,19 @@ CMakeFiles/lib.dir/src/inlet_boundary.f90.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling Fortran source to assembly CMakeFiles/lib.dir/src/inlet_boundary.f90.s"
 	/home/aniruddhav/miniconda3/envs/hdf5_test/bin/gfortran $(Fortran_DEFINES) $(Fortran_INCLUDES) $(Fortran_FLAGS) -S /home/aniruddhav/CFD_Project/CFD6145_Final_Project/src/inlet_boundary.f90 -o CMakeFiles/lib.dir/src/inlet_boundary.f90.s
 
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.o: CMakeFiles/lib.dir/flags.make
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.o: /home/aniruddhav/CFD_Project/CFD6145_Final_Project/src/airfoil_boundary.f90
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build_release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building Fortran object CMakeFiles/lib.dir/src/airfoil_boundary.f90.o"
+	/home/aniruddhav/miniconda3/envs/hdf5_test/bin/gfortran $(Fortran_DEFINES) $(Fortran_INCLUDES) $(Fortran_FLAGS) -c /home/aniruddhav/CFD_Project/CFD6145_Final_Project/src/airfoil_boundary.f90 -o CMakeFiles/lib.dir/src/airfoil_boundary.f90.o
+
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing Fortran source to CMakeFiles/lib.dir/src/airfoil_boundary.f90.i"
+	/home/aniruddhav/miniconda3/envs/hdf5_test/bin/gfortran $(Fortran_DEFINES) $(Fortran_INCLUDES) $(Fortran_FLAGS) -E /home/aniruddhav/CFD_Project/CFD6145_Final_Project/src/airfoil_boundary.f90 > CMakeFiles/lib.dir/src/airfoil_boundary.f90.i
+
+CMakeFiles/lib.dir/src/airfoil_boundary.f90.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling Fortran source to assembly CMakeFiles/lib.dir/src/airfoil_boundary.f90.s"
+	/home/aniruddhav/miniconda3/envs/hdf5_test/bin/gfortran $(Fortran_DEFINES) $(Fortran_INCLUDES) $(Fortran_FLAGS) -S /home/aniruddhav/CFD_Project/CFD6145_Final_Project/src/airfoil_boundary.f90 -o CMakeFiles/lib.dir/src/airfoil_boundary.f90.s
+
 # Object files for target lib
 lib_OBJECTS = \
 "CMakeFiles/lib.dir/src/set_precision.f90.o" \
@@ -311,7 +324,8 @@ lib_OBJECTS = \
 "CMakeFiles/lib.dir/src/flux.f90.o" \
 "CMakeFiles/lib.dir/src/limiters.f90.o" \
 "CMakeFiles/lib.dir/src/residual_io.f90.o" \
-"CMakeFiles/lib.dir/src/inlet_boundary.f90.o"
+"CMakeFiles/lib.dir/src/inlet_boundary.f90.o" \
+"CMakeFiles/lib.dir/src/airfoil_boundary.f90.o"
 
 # External object files for target lib
 lib_EXTERNAL_OBJECTS =
@@ -333,9 +347,10 @@ lib/liblib.a: CMakeFiles/lib.dir/src/flux.f90.o
 lib/liblib.a: CMakeFiles/lib.dir/src/limiters.f90.o
 lib/liblib.a: CMakeFiles/lib.dir/src/residual_io.f90.o
 lib/liblib.a: CMakeFiles/lib.dir/src/inlet_boundary.f90.o
+lib/liblib.a: CMakeFiles/lib.dir/src/airfoil_boundary.f90.o
 lib/liblib.a: CMakeFiles/lib.dir/build.make
 lib/liblib.a: CMakeFiles/lib.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build_release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Linking Fortran static library lib/liblib.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/aniruddhav/CFD_Project/CFD6145_Final_Project/build_release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Linking Fortran static library lib/liblib.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/lib.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/lib.dir/link.txt --verbose=$(VERBOSE)
 

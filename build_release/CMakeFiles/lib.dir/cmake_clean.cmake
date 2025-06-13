@@ -1,6 +1,7 @@
 file(REMOVE_RECURSE
   "CMakeFiles/lib.dir/src/Init.f90.o"
   "CMakeFiles/lib.dir/src/MMS_functions.f90.o"
+  "CMakeFiles/lib.dir/src/airfoil_boundary.f90.o"
   "CMakeFiles/lib.dir/src/fluid_constants.f90.o"
   "CMakeFiles/lib.dir/src/flux.f90.o"
   "CMakeFiles/lib.dir/src/geometry.f90.o"

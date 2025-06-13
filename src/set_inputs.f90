@@ -44,7 +44,7 @@ module set_inputs
   integer,public :: max_iter = 300000
   integer,public :: soln_out_freq =1000
   real(prec), public :: tol = 1.0e-10_prec
-  integer,public :: second_order_switch_iterations = 1000
+  integer,public :: second_order_switch_iterations = 5000
 
 
 

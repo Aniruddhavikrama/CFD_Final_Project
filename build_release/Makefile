@@ -190,6 +190,30 @@ src/MMS_functions.f90.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/MMS_functions.f90.s
 .PHONY : src/MMS_functions.f90.s
 
+src/airfoil_boundary.o: src/airfoil_boundary.f90.o
+.PHONY : src/airfoil_boundary.o
+
+# target to build an object file
+src/airfoil_boundary.f90.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/airfoil_boundary.f90.o
+.PHONY : src/airfoil_boundary.f90.o
+
+src/airfoil_boundary.i: src/airfoil_boundary.f90.i
+.PHONY : src/airfoil_boundary.i
+
+# target to preprocess a source file
+src/airfoil_boundary.f90.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/airfoil_boundary.f90.i
+.PHONY : src/airfoil_boundary.f90.i
+
+src/airfoil_boundary.s: src/airfoil_boundary.f90.s
+.PHONY : src/airfoil_boundary.s
+
+# target to generate assembly for a file
+src/airfoil_boundary.f90.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lib.dir/build.make CMakeFiles/lib.dir/src/airfoil_boundary.f90.s
+.PHONY : src/airfoil_boundary.f90.s
+
 src/fluid_constants.o: src/fluid_constants.f90.o
 .PHONY : src/fluid_constants.o
 
@@ -590,6 +614,9 @@ help:
 	@echo "... src/MMS_functions.o"
 	@echo "... src/MMS_functions.i"
 	@echo "... src/MMS_functions.s"
+	@echo "... src/airfoil_boundary.o"
+	@echo "... src/airfoil_boundary.i"
+	@echo "... src/airfoil_boundary.s"
 	@echo "... src/fluid_constants.o"
 	@echo "... src/fluid_constants.i"
 	@echo "... src/fluid_constants.s"

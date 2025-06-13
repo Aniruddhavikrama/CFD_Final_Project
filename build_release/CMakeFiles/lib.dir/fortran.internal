@@ -1,5 +1,6 @@
 # The fortran modules provided by this target.
 provides
+ airfoil_boundary.mod
  fluid_constants.mod
  flux.mod
  geometry.mod

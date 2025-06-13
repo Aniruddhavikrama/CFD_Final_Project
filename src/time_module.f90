@@ -11,6 +11,7 @@ module time_module
     use mms_functions, only: wrap_rmassconv, wrap_xmtmconv, wrap_ymtmconv, wrap_energyconv
     use flux, only : compute_fluxes
     use inlet_boundary
+    use airfoil_boundary
 
     implicit none
 
@@ -214,7 +215,7 @@ module time_module
 !   end subroutine explicit_RK
 
 
-subroutine explicit_RK(grid, soln)
+subroutine explicit_RK(grid, soln) !Runge Kutta 4 stage
       type(grid_t), intent(inout) :: grid
       type(soln_t), intent(inout) :: soln
       real(prec), dimension(4) :: k
@@ -227,12 +228,24 @@ subroutine explicit_RK(grid, soln)
         ! call apply_inlet_boundary(grid,soln)
 
         call update_states(soln, grid)
-        ! call apply_inlet_bc(grid,soln)
-        call apply_slip_walls(grid,soln)
-        call apply_outflow_bc(grid,soln)
+
+        !FOR SUPERSONIC INLET
+        ! ! call apply_inlet_bc(grid,soln)
+        ! call apply_slip_walls(grid,soln)
+        ! call apply_outflow_bc(grid,soln)
+
+
+        !FOR AIRFOIL
+        call apply_farfield_bc(grid, soln)
+        call apply_airfoil_outflow_bc(grid, soln)
+        call apply_airfoil_slip_wall(grid, soln)
+        call apply_wake_cut_bc(grid, soln)
+
         ! Set source term for MMS
         ! call evaluate_mms_source(grid,soln)
         ! soln%S = soln%Smms
+
+        !For inlet and airfoil source is zero
         soln%S = 0.0_prec
         ! Convert primitive to conserved variables
         call prim2cons(soln%U, soln%V)
